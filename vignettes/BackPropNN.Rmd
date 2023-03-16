@@ -1,0 +1,78 @@
+---
+title: "BackPropNN"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{BackPropNN}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(BackPropNN)
+```
+
+# Simulated data - OR data.
+
+```{r}
+num_obs <- 10000 # Number of observations
+X1 <- sample(c(0,1),num_obs, replace = TRUE)
+X2 <- sample(c(0,1),num_obs, replace = TRUE)
+Y <- ifelse(X1==0 & X2==0, 0, 1)
+data <- data.frame(X1,X2,Y)
+```
+
+# Running the functions of BackPropNN package.
+
+```{r}
+set.seed(100)
+i <- 2 # number of input nodes
+h <- 4 # number of hidden nodes
+o <- 1 # number of output nodes
+learning_rate <- 0.1 # The learning rate of the algorithm
+activation_func <- "sigmoid" # the activation function
+nn_model <- back_propagation_training(i, h, o, learning_rate, activation_func, data)
+```
+
+# Summarizing the results of nn_model.
+
+```{r}
+plot(nn_model)
+summary(nn_model)
+print(nn_model)
+```
+
+# Real data.
+
+```{r}
+data("iris")
+data <- iris
+data <- data[data$Species != "virginica", ] 
+data$Species <- ifelse(data$Species=="setosa",0,1)
+```
+
+```{r}
+set.seed(100)
+i <- 4 # number of input nodes, i.e., number of X variables.
+h <- 8 # number of hidden nodes
+o <- 1 # number of output nodes
+learning_rate <- 0.1 # The learning rate of the algorithm
+activation_func <- "sigmoid" # the activation function
+nn_model <- back_propagation_training(i, h, o, learning_rate, activation_func, data)
+```
+
+# Summarizing the results of nn_model.
+
+```{r}
+plot(nn_model)
+summary(nn_model)
+print(nn_model)
+```
+
+

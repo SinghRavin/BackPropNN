@@ -1,0 +1,30 @@
+Package: BackPropNN
+Title: Feed Forward Neural Network trained via Backpropagation
+Version: 0.1-0
+Authors@R: 
+    person("Ravinder", "Singh", , "u1374012@utah.edu", role = c("aut", "cre"),
+           comment = c(ORCID = "0000-0002-7221-8557"))
+Description: This R-package will contain functions that will implement NN 
+    training (via backpropagation) from scratch (using basic R packages). 
+    The function will take data (X and Y) as an input and will ask user to specify 
+    # of input nodes, # of hidden nodes, # of output nodes, learning rate, and an 
+    activation function to be used. The function will produce the NN model in terms 
+    of matrices containing weights for each nodes. The user will be able to choose 
+    activation function between ReLU and Sigmoid. The user will be able to compare 
+    the performance of this R-package in comparison to existing R NN packages in 
+    terms of accuracy and computational time.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.2.3
+Imports: 
+    stats,
+    Rmpfr,
+    nnet,
+    pROC
+Suggests: 
+    knitr,
+    rmarkdown,
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
+VignetteBuilder: knitr
