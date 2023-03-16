@@ -51,7 +51,7 @@ print(nn_model)
 # Real data.
 
 ```{r}
-data("iris")
+data("iris") # Using iris data set.
 data <- iris
 data <- data[data$Species != "virginica", ] 
 data$Species <- ifelse(data$Species=="setosa",0,1)
