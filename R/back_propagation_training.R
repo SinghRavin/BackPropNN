@@ -13,21 +13,17 @@
 #' @return A list of class \code{BackPropNN_back_propagation_training}:
 #' @examples
 #' set.seed(100)
-#' i <- 2 # number of input nodes
-#' h <- 2 # number of hidden nodes
-#' o <- 1 # number of output nodes
-#' learning_rate <- 0.1 # The learning rate of the algorithm
-#' activation_func <- "sigmoid" # the activation function
 #' data <- data.frame(X1 = 1:100, X2 = 2:101, Y = sample(c(0,1), 100, replace=TRUE))
-#' nn_model <- back_propagation_training(i, h, o, learning_rate, activation_func, data)
+#' nn_model <- back_propagation_training(i=2, h=2, o=1, learning_rate=0.01,
+#' activation_func="sigmoid", data=data)
 #'
 #' @export
 back_propagation_training <- function(i, h, o, learning_rate, activation_func, data){
 
-  W_IH = matrix(0.01,h,i)
-  W_HO = matrix(0.01,o,h)
-  B_H = matrix(0.01,h,1)
-  B_O = matrix(0.01,o,1)
+  W_IH = matrix(0.01,nrow=h,ncol=i)
+  W_HO = matrix(0.01,nrow=o,ncol=h)
+  B_H = matrix(0.01,nrow=h,ncol=1)
+  B_O = matrix(0.01,nrow=o,ncol=1)
 
   X = as.matrix(data[1:ncol(data)-1])
   Y = as.matrix(data[,ncol(data)])
@@ -86,7 +82,7 @@ plot.BackPropNN_back_propagation_training <- function(x) {
   Y = as.matrix(data[,ncol(data)])
 
   nn_R <- nnet::nnet(X,Y,size=x$num_nodes[2], trace=FALSE)
-  nn_R_pred <- as.numeric(stats::predict(nn_R,X))
+  nn_R_pred <- as.numeric(stats::predict(nn_R,X, type="raw"))
 
   pROC::roc(data[,ncol(data)],feed_forward(data,x)$pred,
             plot=TRUE, print.auc=TRUE, main="ROC curve by BackPropNN")
@@ -114,7 +110,7 @@ print.BackPropNN_back_propagation_training <- function(x) {
   Y = as.matrix(data[,ncol(data)])
 
   nn_R <- nnet::nnet(X,Y,size=x$num_nodes[2], trace=FALSE)
-  nn_R_pred <- as.numeric(stats::predict(nn_R,X))
+  nn_R_pred <- as.numeric(stats::predict(nn_R,X, type="raw"))
   nn_R_mse <- mean((Y - nn_R_pred)^2)
 
   my_nn_mse <- mean((Y - feed_forward(x$input_data,x)$pred)^2)

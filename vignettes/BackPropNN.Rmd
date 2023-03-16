@@ -18,13 +18,13 @@ knitr::opts_chunk$set(
 library(BackPropNN)
 ```
 
-# Simulated data - OR data.
+# Simulated data - AND data.
 
 ```{r}
-num_obs <- 10000 # Number of observations
+num_obs <- 100000 # Number of observations
 X1 <- sample(c(0,1),num_obs, replace = TRUE)
 X2 <- sample(c(0,1),num_obs, replace = TRUE)
-Y <- ifelse(X1==0 & X2==0, 0, 1)
+Y <- ifelse(X1==1 & X2==1, 1, 0)
 data <- data.frame(X1,X2,Y)
 ```
 

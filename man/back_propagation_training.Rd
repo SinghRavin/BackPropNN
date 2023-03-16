@@ -41,12 +41,8 @@ Computes the weight and bias matrices for the nodes of the neural network with \
 }
 \examples{
 set.seed(100)
-i <- 2 # number of input nodes
-h <- 2 # number of hidden nodes
-o <- 1 # number of output nodes
-learning_rate <- 0.1 # The learning rate of the algorithm
-activation_func <- "sigmoid" # the activation function
 data <- data.frame(X1 = 1:100, X2 = 2:101, Y = sample(c(0,1), 100, replace=TRUE))
-nn_model <- back_propagation_training(i, h, o, learning_rate, activation_func, data)
+nn_model <- back_propagation_training(i=2, h=2, o=1, learning_rate=0.01,
+activation_func="sigmoid", data=data)
 
 }
