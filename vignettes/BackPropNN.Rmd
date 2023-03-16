@@ -48,7 +48,7 @@ summary(nn_model)
 print(nn_model)
 ```
 
-# Real data.
+# Real data - IRIS data.
 
 ```{r}
 data("iris") # Using iris data set.
