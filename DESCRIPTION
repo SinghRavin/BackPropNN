@@ -21,7 +21,8 @@ Imports:
     stats,
     Rmpfr,
     nnet,
-    pROC
+    pROC,
+    bench
 Suggests: 
     knitr,
     rmarkdown,
