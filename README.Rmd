@@ -16,6 +16,7 @@ knitr::opts_chunk$set(
 # BackPropNN
 
 <!-- badges: start -->
+[![R-CMD-check](https://github.com/UofUEpi/BackPropNN/workflows/R-CMD-check/badge.svg)](https://github.com/UofUEpi/BackPropNN/actions)
 <!-- badges: end -->
 
 The neural network algorithm trained by the process of backpropagation is implemented. The stochastic gradient descent (SGD) is adopted for this algorithm i.e., the weight and bias matrices are updated after learning from the errors of each dataset point one by one. In this package, 3 layer (input, one hidden and output) neural network is considered. The mathematical equation involved are given below,
