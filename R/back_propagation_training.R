@@ -8,6 +8,7 @@
 #' @param learning_rate Numeric scalar. Learning rate of the algorithm.
 #' @param activation_func Character (either "sigmoid" or "ReLU").
 #' @param data R data frame with X columns and Y labels.
+#' @param ... Further arguments passed.
 #'
 #' @details Computes the weight and bias matrices for the nodes of the neural network with \code{i} # of input nodes, \code{h} # of hidden nodes, and \code{o} # of output nodes.
 #' @return A list of class \code{BackPropNN_back_propagation_training}:
@@ -18,7 +19,8 @@
 #' activation_func="sigmoid", data=data)
 #'
 #' @export
-back_propagation_training <- function(i, h, o, learning_rate, activation_func, data){
+back_propagation_training <- function(i, h, o, learning_rate,
+                                      activation_func, data, ...){
 
   W_IH = matrix(0.01,nrow=h,ncol=i)
   W_HO = matrix(0.01,nrow=o,ncol=h)
@@ -65,8 +67,8 @@ back_propagation_training <- function(i, h, o, learning_rate, activation_func, d
                                                                           "# of hidden nodes",
                                                                           "# of output nodes")),
                  activation_function=activation_func,
-                 learning_rate = learning_rate,
-                 weight_bias_matrices = list(weight_input_hidden=W_IH,
+                 learning_rate=learning_rate,
+                 weight_bias_matrices=list(weight_input_hidden=W_IH,
                                              weight_hidden_output=W_HO,
                                              bias_hidden=B_H,
                                              bias_output=B_O)), class = "BackPropNN_back_propagation_training")
@@ -75,7 +77,8 @@ back_propagation_training <- function(i, h, o, learning_rate, activation_func, d
 #' @rdname back_propagation_training
 #' @export
 #' @param x An object of class \code{BackPropNN_back_propagation_training}.
-plot.BackPropNN_back_propagation_training <- function(x) {
+#' @param ... Further arguments passed.
+plot.BackPropNN_back_propagation_training <- function(x, ...) {
 
   data <- x$input_data
   X = as.matrix(data[1:ncol(data)-1])
@@ -92,18 +95,21 @@ plot.BackPropNN_back_propagation_training <- function(x) {
 
 #' @rdname back_propagation_training
 #' @export
-#' @param x An object of class \code{BackPropNN_back_propagation_training}.
-summary.BackPropNN_back_propagation_training <- function(x) {
-  list(num_nodes=x$num_nodes,
-       activation_function=x$activation_function,
-       learning_rate = x$learning_rate,
-       weight_bias_matrices = x$weight_bias_matrices)
+#' @param object An object of class \code{BackPropNN_back_propagation_training}.
+#' @param ... Further arguments passed.
+summary.BackPropNN_back_propagation_training <- function(object, ...) {
+
+  list(num_nodes=object$num_nodes,
+       activation_function=object$activation_function,
+       learning_rate=object$learning_rate,
+       weight_bias_matrices=object$weight_bias_matrices)
 }
 
 #' @rdname back_propagation_training
 #' @export
 #' @param x An object of class \code{BackPropNN_back_propagation_training}.
-print.BackPropNN_back_propagation_training <- function(x) {
+#' @param ... Further arguments passed.
+print.BackPropNN_back_propagation_training <- function(x, ...) {
 
   data <- x$input_data
   X = as.matrix(data[1:ncol(data)-1])
@@ -118,7 +124,8 @@ print.BackPropNN_back_propagation_training <- function(x) {
   print(bench::mark("BackPropNN"=back_propagation_training(x$num_nodes[1],x$num_nodes[2],
                                           x$num_nodes[3], x$learning_rate,
                                           x$activation_function, data),
-                    "R nnet"=nnet::nnet(X,Y,size=x$num_nodes[2], trace=FALSE), relative = TRUE, check = FALSE))
+                    "R nnet"=nnet::nnet(X,Y,size=x$num_nodes[2], trace=FALSE),
+                    relative = TRUE, check = FALSE))
 
   list(mse_comparison =stats::setNames(c(nn_R_mse,my_nn_mse),
                                        c("MSE by R nnet", "MSE by BackPropNN")))

@@ -7,13 +7,13 @@
 \alias{print.BackPropNN_back_propagation_training}
 \title{The title of -back_propagation_training-}
 \usage{
-back_propagation_training(i, h, o, learning_rate, activation_func, data)
+back_propagation_training(i, h, o, learning_rate, activation_func, data, ...)
 
-\method{plot}{BackPropNN_back_propagation_training}(x)
+\method{plot}{BackPropNN_back_propagation_training}(x, ...)
 
-\method{summary}{BackPropNN_back_propagation_training}(x)
+\method{summary}{BackPropNN_back_propagation_training}(object, ...)
 
-\method{print}{BackPropNN_back_propagation_training}(x)
+\method{print}{BackPropNN_back_propagation_training}(x, ...)
 }
 \arguments{
 \item{i}{Numeric scalar. Number of input nodes.}
@@ -28,7 +28,11 @@ back_propagation_training(i, h, o, learning_rate, activation_func, data)
 
 \item{data}{R data frame with X columns and Y labels.}
 
+\item{...}{Further arguments passed.}
+
 \item{x}{An object of class \code{BackPropNN_back_propagation_training}.}
+
+\item{object}{An object of class \code{BackPropNN_back_propagation_training}.}
 }
 \value{
 A list of class \code{BackPropNN_back_propagation_training}:
