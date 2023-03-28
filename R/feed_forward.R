@@ -10,7 +10,7 @@
 #' @return A vector of class \code{BackPropNN_feed_forward}:
 #' @examples
 #' data <- data.frame(X1 = 1:10, X2 = 2:11, Y = sample(c(0,1), 10, replace=TRUE))
-#' nn_model <- back_propagation_training(i, h, o, learning_rate, activation_func, data)
+#' nn_model <- back_propagation_training(i=2, h=2, o=1, learning_rate=0.01, activation_func="sigmoid", data=data)
 #' feed_forward(data, nn_model)
 #'
 #' @export
