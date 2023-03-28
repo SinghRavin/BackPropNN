@@ -48,9 +48,10 @@ This is a basic example which shows you how to solve a common problem:
 
 ```{r example}
 library(BackPropNN)
-data <- data.frame(X1=sample(c(0,1),num_obs, replace = TRUE),
-                   X2=sample(c(0,1),num_obs, replace = TRUE),
-                   Y=ifelse(X1==0 & X2==0, 0, 1)) # Setting up the data
+num_obs <- 1000
+X1=sample(c(0,1),num_obs, replace = TRUE)
+X2=sample(c(0,1),num_obs, replace = TRUE)
+data <- data.frame(X1,X2,Y=ifelse(X1==0 & X2==0, 0, 1)) # Setting up the data
 i <- 2 # number of input nodes, which must be equal to the number of X variables.
 h <- 4 # number of hidden nodes
 o <- 1 # number of output nodes
