@@ -17,16 +17,20 @@ considered. The mathematical equation involved are given below,
 
 FeedForward:
 
-\[H\] = sigma(\[W_IH\].\[I\] + \[B_H\]) \[O\] =
+\[H\] = sigma(\[W_IH\].\[I\] + \[B_H\])  
+\[O\] =
 sigma(\[W_HO\].\[H\] + \[B_O\])
 
 Backpropagation:
 
 \[delta_W\_HO\] =
-(learning_rate)\[Output_Errors\]x\[O(1-O)\].\[H_tranpose\]
+(learning_rate)\[Output_Errors\]x\[O(1-O)\].\[H_tranpose\]  
+
 \[delta_W\_IH\] =
-(learning_rate)\[Hiddden_Errors\]x\[H(1-H)\].\[I_tranpose\]
-\[delta_B\_O\] = (learning_rate)\[Output_Errors\]x\[O(1-O)\]
+(learning_rate)\[Hiddden_Errors\]x\[H(1-H)\].\[I_tranpose\]  
+
+\[delta_B\_O\] = (learning_rate)\[Output_Errors\]x\[O(1-O)\]  
+
 \[delta_B\_H\] = (learning_rate)\[Hidden_Errors\]x\[H(1-H)\]
 
 Where, \[\] represents the matrix, x represents the Hadamard
