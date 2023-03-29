@@ -15,10 +15,14 @@ learning from the errors of each dataset point one by one. In this
 package, 3 layer (input, one hidden and output) neural network is
 considered. The mathematical equation involved are given below,
 
-FeedForward: \[H\] = sigma(\[W_IH\].\[I\] + \[B_H\]) \[O\] =
+FeedForward:
+
+\[H\] = sigma(\[W_IH\].\[I\] + \[B_H\]) \[O\] =
 sigma(\[W_HO\].\[H\] + \[B_O\])
 
-Backpropagation: \[delta_W\_HO\] =
+Backpropagation:
+
+\[delta_W\_HO\] =
 (learning_rate)\[Output_Errors\]x\[O(1-O)\].\[H_tranpose\]
 \[delta_W\_IH\] =
 (learning_rate)\[Hiddden_Errors\]x\[H(1-H)\].\[I_tranpose\]
