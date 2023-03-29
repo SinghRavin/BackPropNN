@@ -44,7 +44,7 @@ data <- data.frame(X1, X2, Y)
 ```{r}
 set.seed(100)
 i <- 2 # number of input nodes
-h <- 4 # number of hidden nodes
+h <- 8 # number of hidden nodes
 o <- 1 # number of output nodes
 learning_rate <- 0.1 # The learning rate of the algorithm
 activation_func <- "sigmoid" # the activation function
