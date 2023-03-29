@@ -4,6 +4,8 @@
 # BackPropNN
 
 <!-- badges: start -->
+
+[![R-CMD-check](https://github.com/SinghRavin/BackPropNN/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/SinghRavin/BackPropNN/actions/workflows/R-CMD-check.yaml)
 <!-- badges: end -->
 
 The neural network algorithm trained by the process of backpropagation
@@ -43,35 +45,58 @@ install.packages("BackPropNN")
 
 This is a basic example which shows you how to solve a common problem:
 
+# Simulated data - Logistics data.
+
 ``` r
-library(BackPropNN)
-num_obs <- 1000
-X1=sample(c(0,1),num_obs, replace = TRUE)
-X2=sample(c(0,1),num_obs, replace = TRUE)
-data <- data.frame(X1,X2,Y=ifelse(X1==0 & X2==0, 0, 1)) # Setting up the data
-i <- 2 # number of input nodes, which must be equal to the number of X variables.
+library(BackPropNN) # Loading the package.
+num_obs <- 10000 # Number of observations
+
+# Setting coefficients values for the logit function.
+beta0 <- -2.5
+beta1 <- 0.02
+beta2 <- 0.01
+
+# Simulating the independent variables.
+X1 <- runif(n=num_obs, min=18, max=60)
+X2 <- runif(n=num_obs, min=100, max=250)
+prob <- exp(beta0 + beta1*X1 + beta2*X2) / (1 + exp(beta0 + beta1*X1 + beta2*X2))
+
+# Generating binary outcome variable.
+Y <- rbinom(n=num_obs, size=1, prob=prob)
+
+data <- data.frame(X1, X2, Y)
+```
+
+# Running the functions of BackPropNN package.
+
+``` r
+set.seed(100)
+i <- 2 # number of input nodes
 h <- 4 # number of hidden nodes
 o <- 1 # number of output nodes
 learning_rate <- 0.1 # The learning rate of the algorithm
 activation_func <- "sigmoid" # the activation function
 nn_model <- back_propagation_training(i, h, o, learning_rate, activation_func, data)
+```
 
-# Plot (ROC-AUC curve), summary and print function.
+# Summarizing the results of nn_model.
+
+``` r
 plot(nn_model)
 #> Setting levels: control = 0, case = 1
-#> Setting direction: controls < cases
+#> Setting direction: controls > cases
 #> Setting levels: control = 0, case = 1
 #> Setting direction: controls < cases
 ```
 
-<img src="man/figures/README-example-1.png" width="100%" /><img src="man/figures/README-example-2.png" width="100%" />
+<img src="man/figures/README-unnamed-chunk-4-1.png" width="100%" /><img src="man/figures/README-unnamed-chunk-4-2.png" width="100%" />
 
     #> 
     #> Call:
     #> roc.default(response = data[, ncol(data)], predictor = nn_R_pred,     plot = TRUE, print.auc = TRUE, main = "ROC curve by R nnet")
     #> 
-    #> Data: nn_R_pred in 259 controls (data[, ncol(data)] 0) < 741 cases (data[, ncol(data)] 1).
-    #> Area under the curve: 1
+    #> Data: nn_R_pred in 4965 controls (data[, ncol(data)] 0) < 5035 cases (data[, ncol(data)] 1).
+    #> Area under the curve: 0.4984
     summary(nn_model)
     #> $num_nodes
     #>  # of input nodes # of hidden nodes # of output nodes 
@@ -85,35 +110,35 @@ plot(nn_model)
     #> 
     #> $weight_bias_matrices
     #> $weight_bias_matrices$weight_input_hidden
-    #>             X1        X2
-    #> [1,] 0.7575685 0.8095009
-    #> [2,] 0.7575685 0.8095009
-    #> [3,] 0.7575685 0.8095009
-    #> [4,] 0.7575685 0.8095009
+    #>              X1         X2
+    #> [1,] 0.05074066 0.04718817
+    #> [2,] 0.05074066 0.04718817
+    #> [3,] 0.05074066 0.04718817
+    #> [4,] 0.05074066 0.04718817
     #> 
     #> $weight_bias_matrices$weight_hidden_output
-    #>           [,1]      [,2]      [,3]      [,4]
-    #> [1,] 0.3478163 0.3478163 0.3478163 0.3478163
+    #>             [,1]        [,2]        [,3]        [,4]
+    #> [1,] -0.03679344 -0.03679344 -0.03679344 -0.03679344
     #> 
     #> $weight_bias_matrices$bias_hidden
     #>            [,1]
-    #> [1,] -0.1894798
-    #> [2,] -0.1894798
-    #> [3,] -0.1894798
-    #> [4,] -0.1894798
+    #> [1,] 0.01089685
+    #> [2,] 0.01089685
+    #> [3,] 0.01089685
+    #> [4,] 0.01089685
     #> 
     #> $weight_bias_matrices$bias_output
-    #>             [,1]
-    #> [1,] -0.04860864
+    #>           [,1]
+    #> [1,] 0.0858438
     print(nn_model)
     #> Warning: Some expressions had a GC in every iteration; so filtering is disabled.
     #> # A tibble: 2 x 13
     #>   expression   min median `itr/sec` mem_alloc gc/se~1 n_itr  n_gc total~2 result
     #>   <bch:expr> <dbl>  <dbl>     <dbl>     <dbl>   <dbl> <int> <dbl> <bch:t> <list>
-    #> 1 BackPropNN  63.5   13.9       1        1        Inf    11    15   525ms <NULL>
-    #> 2 R nnet       1      1        12.7      5.88     NaN   134     0   505ms <NULL>
+    #> 1 BackPropNN  39.1   23.7      1         1        Inf     1    14   502ms <NULL>
+    #> 2 R nnet       1      1        5.70      6.82     NaN     8     0   705ms <NULL>
     #> # ... with 3 more variables: memory <list>, time <list>, gc <list>, and
     #> #   abbreviated variable names 1: `gc/sec`, 2: total_time
     #> $mse_comparison
     #>     MSE by R nnet MSE by BackPropNN 
-    #>         0.0000000         0.1668857
+    #>         0.2359459         0.2503443
