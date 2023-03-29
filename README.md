@@ -25,12 +25,9 @@ Backpropagation:
 
 \[delta_W\_HO\] =
 (learning_rate)\[Output_Errors\]x\[O(1-O)\].\[H_tranpose\]  
-
 \[delta_W\_IH\] =
 (learning_rate)\[Hiddden_Errors\]x\[H(1-H)\].\[I_tranpose\]  
-
 \[delta_B\_O\] = (learning_rate)\[Output_Errors\]x\[O(1-O)\]  
-
 \[delta_B\_H\] = (learning_rate)\[Hidden_Errors\]x\[H(1-H)\]
 
 Where, \[\] represents the matrix, x represents the Hadamard
