@@ -33,7 +33,7 @@ X1 <- runif(n=num_obs, min=18, max=60)
 X2 <- runif(n=num_obs, min=100, max=250)
 prob <- exp(beta0 + beta1*X1 + beta2*X2) / (1 + exp(beta0 + beta1*X1 + beta2*X2))
 
-# Generating binary outcome variable.
+# Simulating binary outcome variable.
 Y <- rbinom(n=num_obs, size=1, prob=prob)
 
 data <- data.frame(X1, X2, Y)
