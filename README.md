@@ -15,19 +15,14 @@ learning from the errors of each dataset point one by one. In this
 package, 3 layer (input, one hidden and output) neural network is
 considered. The mathematical equation involved are given below,
 
-FeedForward:
-
-\[H\] = sigma(\[W_IH\].\[I\] + \[B_H\])  
-\[O\] =
+FeedForward: \[H\] = sigma(\[W_IH\].\[I\] + \[B_H\]) \[O\] =
 sigma(\[W_HO\].\[H\] + \[B_O\])
 
-Backpropagation:
-
-\[delta_W\_HO\] =
-(learning_rate)\[Output_Errors\]x\[O(1-O)\].\[H_tranpose\]  
+Backpropagation: \[delta_W\_HO\] =
+(learning_rate)\[Output_Errors\]x\[O(1-O)\].\[H_tranpose\]
 \[delta_W\_IH\] =
-(learning_rate)\[Hiddden_Errors\]x\[H(1-H)\].\[I_tranpose\]  
-\[delta_B\_O\] = (learning_rate)\[Output_Errors\]x\[O(1-O)\]  
+(learning_rate)\[Hiddden_Errors\]x\[H(1-H)\].\[I_tranpose\]
+\[delta_B\_O\] = (learning_rate)\[Output_Errors\]x\[O(1-O)\]
 \[delta_B\_H\] = (learning_rate)\[Hidden_Errors\]x\[H(1-H)\]
 
 Where, \[\] represents the matrix, x represents the Hadamard
@@ -100,8 +95,8 @@ plot(nn_model)
     #> Call:
     #> roc.default(response = data[, ncol(data)], predictor = nn_R_pred,     plot = TRUE, print.auc = TRUE, main = "ROC curve by R nnet")
     #> 
-    #> Data: nn_R_pred in 4965 controls (data[, ncol(data)] 0) < 5035 cases (data[, ncol(data)] 1).
-    #> Area under the curve: 0.4984
+    #> Data: nn_R_pred in 4970 controls (data[, ncol(data)] 0) < 5030 cases (data[, ncol(data)] 1).
+    #> Area under the curve: 0.5
     summary(nn_model)
     #> $num_nodes
     #>  # of input nodes # of hidden nodes # of output nodes 
@@ -115,35 +110,69 @@ plot(nn_model)
     #> 
     #> $weight_bias_matrices
     #> $weight_bias_matrices$weight_input_hidden
-    #>              X1         X2
-    #> [1,] 0.05074066 0.04718817
-    #> [2,] 0.05074066 0.04718817
-    #> [3,] 0.05074066 0.04718817
-    #> [4,] 0.05074066 0.04718817
+    #>               X1          X2
+    #> [1,] -0.01080641 -0.08982863
+    #> [2,] -0.01080641 -0.08982863
+    #> [3,] -0.01080641 -0.08982863
+    #> [4,] -0.01080641 -0.08982863
     #> 
     #> $weight_bias_matrices$weight_hidden_output
-    #>             [,1]        [,2]        [,3]        [,4]
-    #> [1,] -0.03679344 -0.03679344 -0.03679344 -0.03679344
+    #>            [,1]       [,2]       [,3]       [,4]
+    #> [1,] 0.08357506 0.08357506 0.08357506 0.08357506
     #> 
     #> $weight_bias_matrices$bias_hidden
-    #>            [,1]
-    #> [1,] 0.01089685
-    #> [2,] 0.01089685
-    #> [3,] 0.01089685
-    #> [4,] 0.01089685
+    #>             [,1]
+    #> [1,] 0.009227459
+    #> [2,] 0.009227459
+    #> [3,] 0.009227459
+    #> [4,] 0.009227459
     #> 
     #> $weight_bias_matrices$bias_output
     #>           [,1]
-    #> [1,] 0.0858438
+    #> [1,] 0.2083556
     print(nn_model)
     #> Warning: Some expressions had a GC in every iteration; so filtering is disabled.
     #> # A tibble: 2 x 13
     #>   expression   min median `itr/sec` mem_alloc gc/se~1 n_itr  n_gc total~2 result
     #>   <bch:expr> <dbl>  <dbl>     <dbl>     <dbl>   <dbl> <int> <dbl> <bch:t> <list>
-    #> 1 BackPropNN  39.1   23.7      1         1        Inf     1    14   502ms <NULL>
-    #> 2 R nnet       1      1        5.70      6.82     NaN     8     0   705ms <NULL>
+    #> 1 BackPropNN  23.8   20.5      1         1       15.9     2    26   864ms <NULL>
+    #> 2 R nnet       1      1        6.56      6.82     1       8     1   527ms <NULL>
     #> # ... with 3 more variables: memory <list>, time <list>, gc <list>, and
     #> #   abbreviated variable names 1: `gc/sec`, 2: total_time
     #> $mse_comparison
     #>     MSE by R nnet MSE by BackPropNN 
-    #>         0.2359459         0.2503443
+    #>         0.2369558         0.2523825
+
+# Now, let’s check if the Rcpp version of BackPropNN helps to improve the computational speed.
+
+``` r
+# Running NN models using both versions.
+nn_model_original <- back_propagation_training(i, h, o, learning_rate,
+                                          activation_func, data)
+nn_model_rcpp <- back_propagation_training_rcpp(i, h, o, learning_rate,
+                                          activation_func, as.matrix(data))
+
+# Running the benchmark comparison for training part.
+bench::mark("Original"=back_propagation_training(i, h, o, learning_rate,
+                                          activation_func, data),
+                    "Rcpp"=back_propagation_training_rcpp(i, h, o, learning_rate,
+                                          activation_func, as.matrix(data)),
+                    relative = TRUE, check = FALSE)
+#> Warning: Some expressions had a GC in every iteration; so filtering is disabled.
+#> # A tibble: 2 x 6
+#>   expression   min median `itr/sec` mem_alloc `gc/sec`
+#>   <bch:expr> <dbl>  <dbl>     <dbl>     <dbl>    <dbl>
+#> 1 Original    121.   119.        1       1        18.7
+#> 2 Rcpp          1      1       115.      2.41      1
+
+# Running the benchmark comparison for training part.
+bench::mark("Original"=feed_forward(data, nn_model_original),
+                    "Rcpp"=feed_forward_rcpp(data, nn_model_rcpp),
+                    relative = TRUE, check = FALSE)
+#> Warning: Some expressions had a GC in every iteration; so filtering is disabled.
+#> # A tibble: 2 x 6
+#>   expression   min median `itr/sec` mem_alloc `gc/sec`
+#>   <bch:expr> <dbl>  <dbl>     <dbl>     <dbl>    <dbl>
+#> 1 Original    283.   274.        1       2.77      Inf
+#> 2 Rcpp          1      1       263.      1         NaN
+```

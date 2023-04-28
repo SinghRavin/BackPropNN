@@ -88,3 +88,26 @@ plot(nn_model)
 summary(nn_model)
 print(nn_model)
 ```
+
+# Now, let's check if the Rcpp version of BackPropNN helps to improve the computational speed.
+
+```{r}
+# Running NN models using both versions.
+nn_model_original <- back_propagation_training(i, h, o, learning_rate,
+                                          activation_func, data)
+nn_model_rcpp <- back_propagation_training_rcpp(i, h, o, learning_rate,
+                                          activation_func, as.matrix(data))
+
+# Running the benchmark comparison for training part.
+bench::mark("Original"=back_propagation_training(i, h, o, learning_rate,
+                                          activation_func, data),
+                    "Rcpp"=back_propagation_training_rcpp(i, h, o, learning_rate,
+                                          activation_func, as.matrix(data)),
+                    relative = TRUE, check = FALSE)
+
+# Running the benchmark comparison for training part.
+bench::mark("Original"=feed_forward(data, nn_model_original),
+                    "Rcpp"=feed_forward_rcpp(data, nn_model_rcpp),
+                    relative = TRUE, check = FALSE)
+```
+
