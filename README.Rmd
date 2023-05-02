@@ -16,30 +16,30 @@ knitr::opts_chunk$set(
 # BackPropNN
 
 <!-- badges: start -->
+
 [![R-CMD-check](https://github.com/SinghRavin/BackPropNN/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/SinghRavin/BackPropNN/actions/workflows/R-CMD-check.yaml)
+
 <!-- badges: end -->
 
 The neural network algorithm trained by the process of backpropagation is implemented. The stochastic gradient descent (SGD) is adopted for this algorithm i.e., the weight and bias matrices are updated after learning from the errors of each data set point one by one. In this package, 3 layer (input, one hidden and output) neural network is considered. The mathematical equation involved are given below,
 
-Feed Forward:
+**Feed Forward:**
 
 [H] = sigma([W_IH].[I] + [B_H])
 
 [O] = sigma([W_HO].[H] + [B_O])
 
-Backpropagation:
+**Backpropagation:**
 
-[delta_W_HO] = (learning_rate)[Output_Errors]x[O(1-O)].[H_tranpose]
+[delta_W\_HO] = (learning_rate)[Output_Errors]x[O(1-O)].[H_tranpose]
 
-[delta_W_IH] = (learning_rate)[Hiddden_Errors]x[H(1-H)].[I_tranpose]
+[delta_W\_IH] = (learning_rate)[Hiddden_Errors]x[H(1-H)].[I_tranpose]
 
-[delta_B_O] = (learning_rate)[Output_Errors]x[O(1-O)]
+[delta_B\_O] = (learning_rate)[Output_Errors]x[O(1-O)]
 
-[delta_B_H] = (learning_rate)[Hidden_Errors]x[H(1-H)]
+[delta_B\_H] = (learning_rate)[Hidden_Errors]x[H(1-H)]
 
-Where, [] represents the matrix, x represents the Hadamard multiplication (element-wise), and . represents the usual matrix multiplication.
-H represents hidden matrix, O represents output matrix, W_IH represents weight matrix between input layer and hidden layer, W_HO represents weight matrix between hidden layer and output layer, B_H represents bias matrix for hidden layer, B_O represents bias matrix for output layer.
-The chosen activation function are Sigmoid or ReLU.
+Where, [] represents the matrix, x represents the Hadamard multiplication (element-wise), and . represents the usual matrix multiplication. H represents hidden matrix, O represents output matrix, W_IH represents weight matrix between input layer and hidden layer, W_HO represents weight matrix between hidden layer and output layer, B_H represents bias matrix for hidden layer, B_O represents bias matrix for output layer. The chosen activation function are Sigmoid or ReLU.
 
 ## Installation
 
@@ -57,7 +57,7 @@ This is a basic example which shows you how to solve a common problem:
 
 ```{r}
 library(BackPropNN) # Loading the package.
-num_obs <- 10000 # Number of observations
+num_obs <- 10000 # Number of observations.
 
 # Setting coefficients values for the logit function.
 beta0 <- -2.5
