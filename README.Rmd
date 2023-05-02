@@ -97,7 +97,7 @@ plot(nn_model)
 summary(nn_model)
 print(nn_model) # This will print the benchmark comparison for training part.
 
-# Running the benchmark comparison for predicting part.
+# Running the benchmark comparison for prediction task.
 bench::mark("BackPropNN"=feed_forward(data, nn_model),
             "R nnet" = as.numeric(stats::predict(nn_model_nnet,X, type="raw")),
                     relative = TRUE, check = FALSE)
@@ -118,7 +118,7 @@ nn_model_rcpp <- back_propagation_training_rcpp(i, h, o, learning_rate,
 nn_model_nnet <- nnet::nnet(X,Y,size=h, trace=FALSE)
 
 
-# Running the benchmark comparison for training part.
+# Running the benchmark comparison for training task.
 bench::mark("Original"=back_propagation_training(i, h, o, learning_rate,
                                           activation_func, data),
             "R nnet"=nnet::nnet(X,Y,size=h, trace=FALSE),
@@ -126,7 +126,7 @@ bench::mark("Original"=back_propagation_training(i, h, o, learning_rate,
                                           activation_func, as.matrix(data)),
                     relative = TRUE, check = FALSE)
 
-# Running the benchmark comparison for predicting part.
+# Running the benchmark comparison for prediction task.
 bench::mark("Original"=feed_forward(data, nn_model_original),
             "R nnet" = as.numeric(stats::predict(nn_model_nnet,X, type="raw")),
             "Rcpp"=feed_forward_rcpp(data, nn_model_rcpp),
