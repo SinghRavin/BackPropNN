@@ -130,6 +130,8 @@ X1 <- runif(n=num_obs, min=18, max=60); X2 <- runif(n=num_obs, min=100, max=250)
 prob <- exp(beta0 + beta1*X1 + beta2*X2) / (1 + exp(beta0 + beta1*X1 + beta2*X2))
 Y <- rbinom(n=num_obs, size=1, prob=prob) # Simulating binary outcome variable.
 data <- data.frame(X1, X2, Y)
+X <- as.matrix(data[1:ncol(data)-1])
+Y <- as.matrix(data[,ncol(data)])
 
 # Setting up NN model specifications.
 i <- 2 # number of input nodes
@@ -143,17 +145,20 @@ nn_model_original <- back_propagation_training(i, h, o, learning_rate,
                                           activation_func, data)
 nn_model_rcpp <- back_propagation_training_rcpp(i, h, o, learning_rate,
                                           activation_func, as.matrix(data))
+nn_model_nnet <- nnet::nnet(X,Y,size=h, trace=FALSE)
 
 # Running the benchmark comparison for training part.
 bench::mark("Original"=back_propagation_training(i, h, o, learning_rate,
                                           activation_func, data),
-                    "Rcpp"=back_propagation_training_rcpp(i, h, o, learning_rate,
+            "R nnet"=nnet::nnet(X,Y,size=h, trace=FALSE),
+            "Rcpp"=back_propagation_training_rcpp(i, h, o, learning_rate,
                                           activation_func, as.matrix(data)),
                     relative = TRUE, check = FALSE)
 
-# Running the benchmark comparison for training part.
+# Running the benchmark comparison for predicting part.
 bench::mark("Original"=feed_forward(data, nn_model_original),
-                    "Rcpp"=feed_forward_rcpp(data, nn_model_rcpp),
+            "R nnet" = as.numeric(stats::predict(nn_model_nnet,X, type="raw")),
+            "Rcpp"=feed_forward_rcpp(data, nn_model_rcpp),
                     relative = TRUE, check = FALSE)
 ```
 
@@ -166,6 +171,8 @@ X1 <- sample(c(0,1),num_obs, replace = TRUE)
 X2 <- sample(c(0,1),num_obs, replace = TRUE)
 Y <- ifelse(X1==1 & X2==1, 1, 0)
 data <- data.frame(X1,X2,Y)
+X <- as.matrix(data[1:ncol(data)-1])
+Y <- as.matrix(data[,ncol(data)])
 
 # Setting up NN model specifications.
 i <- 2 # number of input nodes
@@ -179,17 +186,20 @@ nn_model_original <- back_propagation_training(i, h, o, learning_rate,
                                           activation_func, data)
 nn_model_rcpp <- back_propagation_training_rcpp(i, h, o, learning_rate,
                                           activation_func, as.matrix(data))
+nn_model_nnet <- nnet::nnet(X,Y,size=h, trace=FALSE)
 
 # Running the benchmark comparison for training part.
 bench::mark("Original"=back_propagation_training(i, h, o, learning_rate,
                                           activation_func, data),
-                    "Rcpp"=back_propagation_training_rcpp(i, h, o, learning_rate,
+            "R nnet"=nnet::nnet(X,Y,size=h, trace=FALSE),
+            "Rcpp"=back_propagation_training_rcpp(i, h, o, learning_rate,
                                           activation_func, as.matrix(data)),
                     relative = TRUE, check = FALSE)
 
-# Running the benchmark comparison for training part.
+# Running the benchmark comparison for predicting part.
 bench::mark("Original"=feed_forward(data, nn_model_original),
-                    "Rcpp"=feed_forward_rcpp(data, nn_model_rcpp),
+            "R nnet" = as.numeric(stats::predict(nn_model_nnet,X, type="raw")),
+            "Rcpp"=feed_forward_rcpp(data, nn_model_rcpp),
                     relative = TRUE, check = FALSE)
 ```
 
@@ -200,6 +210,8 @@ data("iris") # Using iris data set.
 data <- iris
 data <- data[data$Species != "virginica", ] 
 data$Species <- ifelse(data$Species=="setosa",0,1)
+X <- as.matrix(data[1:ncol(data)-1])
+Y <- as.matrix(data[,ncol(data)])
 
 # Setting up NN model specifications.
 i <- 4 # number of input nodes
@@ -213,17 +225,20 @@ nn_model_original <- back_propagation_training(i, h, o, learning_rate,
                                           activation_func, data)
 nn_model_rcpp <- back_propagation_training_rcpp(i, h, o, learning_rate,
                                           activation_func, as.matrix(data))
+nn_model_nnet <- nnet::nnet(X,Y,size=h, trace=FALSE)
 
 # Running the benchmark comparison for training part.
 bench::mark("Original"=back_propagation_training(i, h, o, learning_rate,
                                           activation_func, data),
-                    "Rcpp"=back_propagation_training_rcpp(i, h, o, learning_rate,
+            "R nnet"=nnet::nnet(X,Y,size=h, trace=FALSE),
+            "Rcpp"=back_propagation_training_rcpp(i, h, o, learning_rate,
                                           activation_func, as.matrix(data)),
                     relative = TRUE, check = FALSE)
 
-# Running the benchmark comparison for training part.
+# Running the benchmark comparison for predicting part.
 bench::mark("Original"=feed_forward(data, nn_model_original),
-                    "Rcpp"=feed_forward_rcpp(data, nn_model_rcpp),
+            "R nnet" = as.numeric(stats::predict(nn_model_nnet,X, type="raw")),
+            "Rcpp"=feed_forward_rcpp(data, nn_model_rcpp),
                     relative = TRUE, check = FALSE)
 ```
 
