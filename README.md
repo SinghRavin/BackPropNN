@@ -88,6 +88,7 @@ o <- 1 # number of output nodes
 learning_rate <- 0.1 # The learning rate of the algorithm
 activation_func <- "sigmoid" # the activation function
 nn_model <- back_propagation_training(i, h, o, learning_rate, activation_func, data)
+nn_model_nnet <- nnet::nnet(X,Y,size=h, trace=FALSE)
 ```
 
 # Summarizing the results of nn_model.
@@ -106,8 +107,8 @@ plot(nn_model)
     #> Call:
     #> roc.default(response = data[, ncol(data)], predictor = nn_R_pred,     plot = TRUE, print.auc = TRUE, main = "ROC curve by R nnet")
     #> 
-    #> Data: nn_R_pred in 4956 controls (data[, ncol(data)] 0) < 5044 cases (data[, ncol(data)] 1).
-    #> Area under the curve: 0.5001
+    #> Data: nn_R_pred in 4983 controls (data[, ncol(data)] 0) < 5017 cases (data[, ncol(data)] 1).
+    #> Area under the curve: 0.6431
     summary(nn_model)
     #> $num_nodes
     #>  # of input nodes # of hidden nodes # of output nodes 
@@ -121,42 +122,57 @@ plot(nn_model)
     #> 
     #> $weight_bias_matrices
     #> $weight_bias_matrices$weight_input_hidden
-    #>                X1          X2
-    #> [1,] -0.009936593 -0.06894385
-    #> [2,] -0.009936593 -0.06894385
-    #> [3,] -0.009936593 -0.06894385
-    #> [4,] -0.009936593 -0.06894385
+    #>               X1        X2
+    #> [1,] -0.02915079 -0.071855
+    #> [2,] -0.02915079 -0.071855
+    #> [3,] -0.02915079 -0.071855
+    #> [4,] -0.02915079 -0.071855
     #> 
     #> $weight_bias_matrices$weight_hidden_output
-    #>             [,1]        [,2]        [,3]        [,4]
-    #> [1,] 0.005291117 0.005291117 0.005291117 0.005291117
+    #>           [,1]      [,2]      [,3]      [,4]
+    #> [1,] 0.0156597 0.0156597 0.0156597 0.0156597
     #> 
     #> $weight_bias_matrices$bias_hidden
     #>             [,1]
-    #> [1,] 0.009333884
-    #> [2,] 0.009333884
-    #> [3,] 0.009333884
-    #> [4,] 0.009333884
+    #> [1,] 0.009039822
+    #> [2,] 0.009039822
+    #> [3,] 0.009039822
+    #> [4,] 0.009039822
     #> 
     #> $weight_bias_matrices$bias_output
-    #>           [,1]
-    #> [1,] 0.1198956
-    print(nn_model)
+    #>            [,1]
+    #> [1,] 0.02453233
+    print(nn_model) # This will print the benchmark comparison for training part.
     #> Warning: Some expressions had a GC in every iteration; so filtering is disabled.
     #> # A tibble: 2 x 13
     #>   expression   min median `itr/sec` mem_alloc gc/se~1 n_itr  n_gc total~2 result
     #>   <bch:expr> <dbl>  <dbl>     <dbl>     <dbl>   <dbl> <int> <dbl> <bch:t> <list>
-    #> 1 BackPropNN  30.0   26.2      1         1        Inf     2    27   959ms <NULL>
-    #> 2 R nnet       1      1        9.16      6.82     NaN    14     0   733ms <NULL>
+    #> 1 BackPropNN  24.7   20.2      1         1        Inf     1    14   518ms <NULL>
+    #> 2 R nnet       1      1        3.79      6.82     NaN     7     0   958ms <NULL>
     #> # ... with 3 more variables: memory <list>, time <list>, gc <list>, and
     #> #   abbreviated variable names 1: `gc/sec`, 2: total_time
     #> $mse_comparison
     #>     MSE by R nnet MSE by BackPropNN 
-    #>         0.2357798         0.2506330
+    #>         0.2345249         0.2500169
+
+    # Running the benchmark comparison for predicting part.
+    bench::mark("BackPropNN"=feed_forward(data, nn_model),
+                "R nnet" = as.numeric(stats::predict(nn_model_nnet,X, type="raw")),
+                        relative = TRUE, check = FALSE)
+    #> Warning: Some expressions had a GC in every iteration; so filtering is disabled.
+    #> # A tibble: 2 x 6
+    #>   expression   min median `itr/sec` mem_alloc `gc/sec`
+    #>   <bch:expr> <dbl>  <dbl>     <dbl>     <dbl>    <dbl>
+    #> 1 BackPropNN  780.   725.        1       1        1.28
+    #> 2 R nnet        1      1       629.      3.34     1
 
 We see that a better AUC score is achieved by the BackPropNN package
 than R nnet, however a better mse is achieved by R nnet (achieving
 slightly lower value than BackPropNN).
+
+Also, BackPropNN (writing in R) consistently perform worse than R nnet
+package in terms of computational speed for both training and prediction
+tasks.
 
 # Now, let’s check if the Rcpp version of BackPropNN package helps to improve the computational speed.
 
@@ -178,11 +194,11 @@ bench::mark("Original"=back_propagation_training(i, h, o, learning_rate,
                     relative = TRUE, check = FALSE)
 #> Warning: Some expressions had a GC in every iteration; so filtering is disabled.
 #> # A tibble: 3 x 6
-#>   expression    min median `itr/sec` mem_alloc `gc/sec`
-#>   <bch:expr>  <dbl>  <dbl>     <dbl>     <dbl>    <dbl>
-#> 1 Original   125.   123.        1         1         Inf
-#> 2 R nnet       4.25   6.70      5.62      6.82      NaN
-#> 3 Rcpp         1      1       116.        2.41      Inf
+#>   expression   min median `itr/sec` mem_alloc `gc/sec`
+#>   <bch:expr> <dbl>  <dbl>     <dbl>     <dbl>    <dbl>
+#> 1 Original   93.9    72.0      1         1         Inf
+#> 2 R nnet      3.21   15.6      2.66      6.82      NaN
+#> 3 Rcpp        1       1       60.9       2.41      NaN
 
 # Running the benchmark comparison for predicting part.
 bench::mark("Original"=feed_forward(data, nn_model_original),
@@ -191,14 +207,15 @@ bench::mark("Original"=feed_forward(data, nn_model_original),
                     relative = TRUE, check = FALSE)
 #> Warning: Some expressions had a GC in every iteration; so filtering is disabled.
 #> # A tibble: 3 x 6
-#>   expression    min median `itr/sec` mem_alloc `gc/sec`
-#>   <bch:expr>  <dbl>  <dbl>     <dbl>     <dbl>    <dbl>
-#> 1 Original   774.   699.          1       2.77      Inf
-#> 2 R nnet       1      1         530.      9.23      Inf
-#> 3 Rcpp         2.65   2.58      252.      1         NaN
+#>   expression     min median `itr/sec` mem_alloc `gc/sec`
+#>   <bch:expr>   <dbl>  <dbl>     <dbl>     <dbl>    <dbl>
+#> 1 Original   1383.   935.          1       2.77      Inf
+#> 2 R nnet        1      1         729.      9.23      Inf
+#> 3 Rcpp          2.71   2.62      304.      1         NaN
 ```
 
 We notice that for the training part, Rcpp version achieves best
 computational speed, however for the predicting part, R nnet package
-takes the lead (performing just slightly better than Rcpp). The Original
-package written in R lags behind in both training and predicting tasks.
+still takes the lead (performing just slightly better than Rcpp). The
+original package written in R lags behind in both training and
+prediction tasks.

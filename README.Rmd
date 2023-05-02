@@ -87,6 +87,7 @@ o <- 1 # number of output nodes
 learning_rate <- 0.1 # The learning rate of the algorithm
 activation_func <- "sigmoid" # the activation function
 nn_model <- back_propagation_training(i, h, o, learning_rate, activation_func, data)
+nn_model_nnet <- nnet::nnet(X,Y,size=h, trace=FALSE)
 ```
 
 # Summarizing the results of nn_model.
@@ -94,10 +95,17 @@ nn_model <- back_propagation_training(i, h, o, learning_rate, activation_func, d
 ```{r}
 plot(nn_model)
 summary(nn_model)
-print(nn_model)
+print(nn_model) # This will print the benchmark comparison for training part.
+
+# Running the benchmark comparison for predicting part.
+bench::mark("BackPropNN"=feed_forward(data, nn_model),
+            "R nnet" = as.numeric(stats::predict(nn_model_nnet,X, type="raw")),
+                    relative = TRUE, check = FALSE)
 ```
 
 We see that a better AUC score is achieved by the BackPropNN package than R nnet, however a better mse is achieved by R nnet (achieving slightly lower value than BackPropNN).
+
+Also, BackPropNN (writing in R) consistently perform worse than R nnet package in terms of computational speed for both training and prediction tasks. 
 
 # Now, let's check if the Rcpp version of BackPropNN package helps to improve the computational speed.
 
@@ -125,4 +133,4 @@ bench::mark("Original"=feed_forward(data, nn_model_original),
                     relative = TRUE, check = FALSE)
 ```
 
-We notice that for the training part, Rcpp version achieves best computational speed, however for the predicting part, R nnet package takes the lead (performing just slightly better than Rcpp). The Original package written in R lags behind in both training and predicting tasks.
+We notice that for the training part, Rcpp version achieves best computational speed, however for the predicting part, R nnet package still takes the lead (performing just slightly better than Rcpp). The original package written in R lags behind in both training and prediction tasks.
