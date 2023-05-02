@@ -11,22 +11,30 @@
 The neural network algorithm trained by the process of backpropagation
 is implemented. The stochastic gradient descent (SGD) is adopted for
 this algorithm i.e., the weight and bias matrices are updated after
-learning from the errors of each dataset point one by one. In this
+learning from the errors of each data set point one by one. In this
 package, 3 layer (input, one hidden and output) neural network is
 considered. The mathematical equation involved are given below,
 
-FeedForward: \[H\] = sigma(\[W_IH\].\[I\] + \[B_H\]) \[O\] =
-sigma(\[W_HO\].\[H\] + \[B_O\])
+Feed Forward:
 
-Backpropagation: \[delta_W\_HO\] =
+\[H\] = sigma(\[W_IH\].\[I\] + \[B_H\])
+
+\[O\] = sigma(\[W_HO\].\[H\] + \[B_O\])
+
+Backpropagation:
+
+\[delta_W\_HO\] =
 (learning_rate)\[Output_Errors\]x\[O(1-O)\].\[H_tranpose\]
+
 \[delta_W\_IH\] =
 (learning_rate)\[Hiddden_Errors\]x\[H(1-H)\].\[I_tranpose\]
+
 \[delta_B\_O\] = (learning_rate)\[Output_Errors\]x\[O(1-O)\]
+
 \[delta_B\_H\] = (learning_rate)\[Hidden_Errors\]x\[H(1-H)\]
 
 Where, \[\] represents the matrix, x represents the Hadamard
-multiplication (elementwise), and . represents the usual matrix
+multiplication (element-wise), and . represents the usual matrix
 multiplication. H represents hidden matrix, O represents output matrix,
 W_IH represents weight matrix between input layer and hidden layer, W_HO
 represents weight matrix between hidden layer and output layer, B_H
@@ -97,8 +105,8 @@ plot(nn_model)
     #> Call:
     #> roc.default(response = data[, ncol(data)], predictor = nn_R_pred,     plot = TRUE, print.auc = TRUE, main = "ROC curve by R nnet")
     #> 
-    #> Data: nn_R_pred in 4907 controls (data[, ncol(data)] 0) < 5093 cases (data[, ncol(data)] 1).
-    #> Area under the curve: 0.5
+    #> Data: nn_R_pred in 4987 controls (data[, ncol(data)] 0) < 5013 cases (data[, ncol(data)] 1).
+    #> Area under the curve: 0.4603
     summary(nn_model)
     #> $num_nodes
     #>  # of input nodes # of hidden nodes # of output nodes 
@@ -112,40 +120,44 @@ plot(nn_model)
     #> 
     #> $weight_bias_matrices
     #> $weight_bias_matrices$weight_input_hidden
-    #>                X1          X2
-    #> [1,] -0.004061627 -0.09207148
-    #> [2,] -0.004061627 -0.09207148
-    #> [3,] -0.004061627 -0.09207148
-    #> [4,] -0.004061627 -0.09207148
+    #>               X1        X2
+    #> [1,] -0.01125158 -0.106917
+    #> [2,] -0.01125158 -0.106917
+    #> [3,] -0.01125158 -0.106917
+    #> [4,] -0.01125158 -0.106917
     #> 
     #> $weight_bias_matrices$weight_hidden_output
     #>            [,1]       [,2]       [,3]       [,4]
-    #> [1,] 0.04778198 0.04778198 0.04778198 0.04778198
+    #> [1,] 0.04227424 0.04227424 0.04227424 0.04227424
     #> 
     #> $weight_bias_matrices$bias_hidden
     #>             [,1]
-    #> [1,] 0.009415372
-    #> [2,] 0.009415372
-    #> [3,] 0.009415372
-    #> [4,] 0.009415372
+    #> [1,] 0.009327462
+    #> [2,] 0.009327462
+    #> [3,] 0.009327462
+    #> [4,] 0.009327462
     #> 
     #> $weight_bias_matrices$bias_output
-    #>             [,1]
-    #> [1,] -0.04422943
+    #>           [,1]
+    #> [1,] -0.172398
     print(nn_model)
     #> Warning: Some expressions had a GC in every iteration; so filtering is disabled.
     #> # A tibble: 2 x 13
     #>   expression   min median `itr/sec` mem_alloc gc/se~1 n_itr  n_gc total~2 result
     #>   <bch:expr> <dbl>  <dbl>     <dbl>     <dbl>   <dbl> <int> <dbl> <bch:t> <list>
-    #> 1 BackPropNN  31.2   24.3       1        1        Inf     2    27  1000ms <NULL>
-    #> 2 R nnet       1      1        10.8      6.82     NaN    11     0   509ms <NULL>
+    #> 1 BackPropNN  32.5   25.4      1         1        Inf     2    27   946ms <NULL>
+    #> 2 R nnet       1      1        5.91      6.82     NaN     8     0   640ms <NULL>
     #> # ... with 3 more variables: memory <list>, time <list>, gc <list>, and
     #> #   abbreviated variable names 1: `gc/sec`, 2: total_time
     #> $mse_comparison
     #>     MSE by R nnet MSE by BackPropNN 
-    #>         0.2369955         0.2503279
+    #>         0.2338410         0.2519602
 
-# Now, let’s check if the Rcpp version of BackPropNN helps to improve the computational speed.
+We see that a better AUC score is achieved by the BackPropNN package
+than R nnet, however a better mse is achieved by R nnet (achieving
+slightly lower value than BackPropNN).
+
+# Now, let’s check if the Rcpp version of BackPropNN package helps to improve the computational speed.
 
 ``` r
 # Running NN models using both versions.
@@ -167,9 +179,9 @@ bench::mark("Original"=back_propagation_training(i, h, o, learning_rate,
 #> # A tibble: 3 x 6
 #>   expression    min median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>  <dbl>  <dbl>     <dbl>     <dbl>    <dbl>
-#> 1 Original   126.   122.        1         1         Inf
-#> 2 R nnet       4.40   6.64      8.21      6.82      NaN
-#> 3 Rcpp         1      1       115.        2.41      Inf
+#> 1 Original   126.   123.        1         1         Inf
+#> 2 R nnet       4.24   6.21      5.17      6.82      NaN
+#> 3 Rcpp         1      1       113.        2.41      Inf
 
 # Running the benchmark comparison for predicting part.
 bench::mark("Original"=feed_forward(data, nn_model_original),
@@ -180,9 +192,9 @@ bench::mark("Original"=feed_forward(data, nn_model_original),
 #> # A tibble: 3 x 6
 #>   expression    min median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>  <dbl>  <dbl>     <dbl>     <dbl>    <dbl>
-#> 1 Original   807.   695.          1       2.77      Inf
-#> 2 R nnet       1      1         627.      9.23      Inf
-#> 3 Rcpp         2.66   2.36      269.      1         NaN
+#> 1 Original   780.   743.          1       2.77      Inf
+#> 2 R nnet       1      1         595.      9.23      Inf
+#> 3 Rcpp         2.68   2.59      272.      1         NaN
 ```
 
 We notice that for the training part, Rcpp version achieves best
