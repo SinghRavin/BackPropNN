@@ -103,7 +103,7 @@ bench::mark("BackPropNN"=feed_forward(data, nn_model),
                     relative = TRUE, check = FALSE)
 ```
 
-We see that a better AUC score is achieved by the BackPropNN package than R nnet, however a better mse is achieved by R nnet (achieving slightly lower value than BackPropNN).
+We see that a slightly better AUC score is achieved by the R nnet package than BackPropNN, infact a better mse is achieved by R nnet (achieving slightly lower value than BackPropNN).
 
 Also, BackPropNN (writing in R) consistently perform worse than R nnet package in terms of computational speed for both training and prediction tasks. 
 

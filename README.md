@@ -96,7 +96,7 @@ nn_model_nnet <- nnet::nnet(X,Y,size=h, trace=FALSE)
 ``` r
 plot(nn_model)
 #> Setting levels: control = 0, case = 1
-#> Setting direction: controls < cases
+#> Setting direction: controls > cases
 #> Setting levels: control = 0, case = 1
 #> Setting direction: controls < cases
 ```
@@ -107,8 +107,8 @@ plot(nn_model)
     #> Call:
     #> roc.default(response = data[, ncol(data)], predictor = nn_R_pred,     plot = TRUE, print.auc = TRUE, main = "ROC curve by R nnet")
     #> 
-    #> Data: nn_R_pred in 4920 controls (data[, ncol(data)] 0) < 5080 cases (data[, ncol(data)] 1).
-    #> Area under the curve: 0.6426
+    #> Data: nn_R_pred in 4875 controls (data[, ncol(data)] 0) < 5125 cases (data[, ncol(data)] 1).
+    #> Area under the curve: 0.6312
     summary(nn_model)
     #> $num_nodes
     #>  # of input nodes # of hidden nodes # of output nodes 
@@ -122,38 +122,38 @@ plot(nn_model)
     #> 
     #> $weight_bias_matrices
     #> $weight_bias_matrices$weight_input_hidden
-    #>              X1         X2
-    #> [1,] 0.01818306 0.08968018
-    #> [2,] 0.01818306 0.08968018
-    #> [3,] 0.01818306 0.08968018
-    #> [4,] 0.01818306 0.08968018
+    #>               X1         X2
+    #> [1,] -0.03438751 -0.0735563
+    #> [2,] -0.03438751 -0.0735563
+    #> [3,] -0.03438751 -0.0735563
+    #> [4,] -0.03438751 -0.0735563
     #> 
     #> $weight_bias_matrices$weight_hidden_output
     #>            [,1]       [,2]       [,3]       [,4]
-    #> [1,] 0.01680826 0.01680826 0.01680826 0.01680826
+    #> [1,] 0.02524909 0.02524909 0.02524909 0.02524909
     #> 
     #> $weight_bias_matrices$bias_hidden
-    #>            [,1]
-    #> [1,] 0.01024479
-    #> [2,] 0.01024479
-    #> [3,] 0.01024479
-    #> [4,] 0.01024479
+    #>             [,1]
+    #> [1,] 0.009070399
+    #> [2,] 0.009070399
+    #> [3,] 0.009070399
+    #> [4,] 0.009070399
     #> 
     #> $weight_bias_matrices$bias_output
-    #>             [,1]
-    #> [1,] -0.06650967
+    #>            [,1]
+    #> [1,] -0.1259049
     print(nn_model) # This will print the benchmark comparison for training part.
     #> Warning: Some expressions had a GC in every iteration; so filtering is disabled.
     #> # A tibble: 2 x 13
     #>   expression   min median `itr/sec` mem_alloc gc/se~1 n_itr  n_gc total~2 result
     #>   <bch:expr> <dbl>  <dbl>     <dbl>     <dbl>   <dbl> <int> <dbl> <bch:t> <list>
-    #> 1 BackPropNN  38.9   25.6      1         1        Inf     1    14   501ms <NULL>
-    #> 2 R nnet       1      1        5.53      6.82     NaN     7     0   634ms <NULL>
+    #> 1 BackPropNN  27.8   25.5      1         1        Inf     2    27   942ms <NULL>
+    #> 2 R nnet       1      1        9.25      6.82     NaN    10     0   509ms <NULL>
     #> # ... with 3 more variables: memory <list>, time <list>, gc <list>, and
     #> #   abbreviated variable names 1: `gc/sec`, 2: total_time
     #> $mse_comparison
     #>     MSE by R nnet MSE by BackPropNN 
-    #>         0.2346527         0.2499971
+    #>         0.2367532         0.2517741
 
     # Running the benchmark comparison for prediction task.
     bench::mark("BackPropNN"=feed_forward(data, nn_model),
@@ -163,8 +163,8 @@ plot(nn_model)
     #> # A tibble: 2 x 6
     #>   expression   min median `itr/sec` mem_alloc `gc/sec`
     #>   <bch:expr> <dbl>  <dbl>     <dbl>     <dbl>    <dbl>
-    #> 1 BackPropNN  828.   706.        1       1        1.23
-    #> 2 R nnet        1      1       639.      3.34     1
+    #> 1 BackPropNN  751.   715.        1       1        2.33
+    #> 2 R nnet        1      1       652.      3.34     1
 
 We see that a better AUC score is achieved by the BackPropNN package
 than R nnet, however a better mse is achieved by R nnet (achieving
@@ -196,9 +196,9 @@ bench::mark("Original"=back_propagation_training(i, h, o, learning_rate,
 #> # A tibble: 3 x 6
 #>   expression    min median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>  <dbl>  <dbl>     <dbl>     <dbl>    <dbl>
-#> 1 Original   135.   121.        1         1         Inf
-#> 2 R nnet       4.26   5.59      6.02      6.82      NaN
-#> 3 Rcpp         1      1       116.        2.41      Inf
+#> 1 Original   125.   129.        1         1         Inf
+#> 2 R nnet       5.40   6.63      3.45      6.82      NaN
+#> 3 Rcpp         1      1       122.        2.41      Inf
 
 # Running the benchmark comparison for prediction task.
 bench::mark("Original"=feed_forward(data, nn_model_original),
@@ -209,9 +209,9 @@ bench::mark("Original"=feed_forward(data, nn_model_original),
 #> # A tibble: 3 x 6
 #>   expression    min median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>  <dbl>  <dbl>     <dbl>     <dbl>    <dbl>
-#> 1 Original   962.   792.          1       2.77     8.36
-#> 2 R nnet       1      1         689.      9.23     7.00
-#> 3 Rcpp         2.94   3.17      240.      1        1
+#> 1 Original   764.   737.          1       2.77      Inf
+#> 2 R nnet       1      1         675.      9.23      Inf
+#> 3 Rcpp         2.66   2.61      277.      1         NaN
 ```
 
 We notice that for the training part, Rcpp version achieves best
