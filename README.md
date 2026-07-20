@@ -24,15 +24,15 @@ considered. The mathematical equation involved are given below,
 
 **Backpropagation:**
 
-\[delta_W\_HO\] =
+\[delta_W_HO\] =
 (learning_rate)\[Output_Errors\]x\[O(1-O)\].\[H_tranpose\]
 
-\[delta_W\_IH\] =
+\[delta_W_IH\] =
 (learning_rate)\[Hiddden_Errors\]x\[H(1-H)\].\[I_tranpose\]
 
-\[delta_B\_O\] = (learning_rate)\[Output_Errors\]x\[O(1-O)\]
+\[delta_B_O\] = (learning_rate)\[Output_Errors\]x\[O(1-O)\]
 
-\[delta_B\_H\] = (learning_rate)\[Hidden_Errors\]x\[H(1-H)\]
+\[delta_B_H\] = (learning_rate)\[Hidden_Errors\]x\[H(1-H)\]
 
 Where, \[\] represents the matrix, x represents the Hadamard
 multiplication (element-wise), and . represents the usual matrix
@@ -42,12 +42,20 @@ represents weight matrix between hidden layer and output layer, B_H
 represents bias matrix for hidden layer, B_O represents bias matrix for
 output layer. The chosen activation function are Sigmoid or ReLU.
 
+Weights are initialised randomly with variance 1/fan-in, and biases at
+zero. Both the R and the C++ engines draw from R’s RNG stream, so
+`set.seed()` gives identical weights in either engine. The `epochs`
+argument controls how many complete passes are made over the data; it
+defaults to 1.
+
 ## Installation
 
-You can install the development version of BackPropNN like so:
+You can install the development version of BackPropNN from GitHub like
+so:
 
 ``` r
-install.packages("BackPropNN")
+# install.packages("devtools")
+devtools::install_github("SinghRavin/BackPropNN")
 ```
 
 ## Example
@@ -58,12 +66,14 @@ This is a basic example which shows you how to solve a common problem:
 
 ``` r
 library(BackPropNN) # Loading the package.
+
+set.seed(100)
 num_obs <- 10000 # Number of observations.
 
 # Setting coefficients values for the logit function.
-beta0 <- -2.5
-beta1 <- 0.02
-beta2 <- 0.01
+beta0 <- -13.6
+beta1 <- 0.10
+beta2 <- 0.05
 
 # Simulating the independent variables.
 X1 <- runif(n=num_obs, min=18, max=60)
@@ -71,24 +81,30 @@ X2 <- runif(n=num_obs, min=100, max=250)
 prob <- exp(beta0 + beta1*X1 + beta2*X2) / (1 + exp(beta0 + beta1*X1 + beta2*X2))
 
 # Generating binary outcome variable.
-Y <- rbinom(n=num_obs, size=1, prob=prob)
+Yvec <- rbinom(n=num_obs, size=1, prob=prob)
 
-data <- data.frame(X1, X2, Y)
-X <- as.matrix(data[1:ncol(data)-1])
-Y <- as.matrix(data[,ncol(data)])
+# Predictors are standardised. A sigmoid saturates when inputs are on the raw
+# scale (X2 averages 175), which stalls learning in every engine compared here.
+data <- data.frame(X1 = as.numeric(scale(X1)),
+                   X2 = as.numeric(scale(X2)),
+                   Y  = Yvec)
+X  <- as.matrix(data[, 1:2])
+Ym <- as.matrix(data[, 3])
 ```
 
 # Running the functions of BackPropNN package.
 
 ``` r
-set.seed(100)
 i <- 2 # number of input nodes
 h <- 4 # number of hidden nodes
 o <- 1 # number of output nodes
 learning_rate <- 0.1 # The learning rate of the algorithm
 activation_func <- "sigmoid" # the activation function
-nn_model <- back_propagation_training(i, h, o, learning_rate, activation_func, data)
-nn_model_nnet <- nnet::nnet(X,Y,size=h, trace=FALSE)
+epochs <- 10 # number of complete passes over the data
+
+set.seed(1)
+nn_model <- back_propagation_training(i, h, o, learning_rate, activation_func,
+                                      data, epochs = epochs)
 ```
 
 # Summarizing the results of nn_model.
@@ -96,19 +112,22 @@ nn_model_nnet <- nnet::nnet(X,Y,size=h, trace=FALSE)
 ``` r
 plot(nn_model)
 #> Setting levels: control = 0, case = 1
-#> Setting direction: controls > cases
-#> Setting levels: control = 0, case = 1
 #> Setting direction: controls < cases
 ```
 
-<img src="man/figures/README-unnamed-chunk-4-1.png" width="100%" /><img src="man/figures/README-unnamed-chunk-4-2.png" width="100%" />
+<img src="man/figures/README-unnamed-chunk-4-1.png" width="100%" />
+
+    #> Setting levels: control = 0, case = 1
+    #> Setting direction: controls < cases
+
+<img src="man/figures/README-unnamed-chunk-4-2.png" width="100%" />
 
     #> 
     #> Call:
     #> roc.default(response = data[, ncol(data)], predictor = nn_R_pred,     plot = TRUE, print.auc = TRUE, main = "ROC curve by R nnet")
     #> 
-    #> Data: nn_R_pred in 5035 controls (data[, ncol(data)] 0) < 4965 cases (data[, ncol(data)] 1).
-    #> Area under the curve: 0.6397
+    #> Data: nn_R_pred in 6111 controls (data[, ncol(data)] 0) < 3889 cases (data[, ncol(data)] 1).
+    #> Area under the curve: 0.8255
     summary(nn_model)
     #> $num_nodes
     #>  # of input nodes # of hidden nodes # of output nodes 
@@ -122,100 +141,170 @@ plot(nn_model)
     #> 
     #> $weight_bias_matrices
     #> $weight_bias_matrices$weight_input_hidden
-    #>              X1         X2
-    #> [1,] -0.0103052 -0.0841665
-    #> [2,] -0.0103052 -0.0841665
-    #> [3,] -0.0103052 -0.0841665
-    #> [4,] -0.0103052 -0.0841665
+    #>             X1        X2
+    #> [1,]  1.119254  2.149039
+    #> [2,] -2.313731 -3.688991
+    #> [3,]  1.239835  2.840185
+    #> [4,]  2.170264  2.719256
     #> 
     #> $weight_bias_matrices$weight_hidden_output
-    #>            [,1]       [,2]       [,3]       [,4]
-    #> [1,] 0.04042159 0.04042159 0.04042159 0.04042159
+    #>           [,1]      [,2]     [,3]     [,4]
+    #> [1,] 0.9573678 -2.354976 1.608131 1.676876
     #> 
     #> $weight_bias_matrices$bias_hidden
-    #>             [,1]
-    #> [1,] 0.009202417
-    #> [2,] 0.009202417
-    #> [3,] 0.009202417
-    #> [4,] 0.009202417
+    #>           [,1]
+    #> [1,] -1.440733
+    #> [2,] -2.186461
+    #> [3,] -3.058938
+    #> [4,] -2.271660
     #> 
     #> $weight_bias_matrices$bias_output
     #>           [,1]
-    #> [1,] 0.1790791
-    print(nn_model) # This will print the benchmark comparison for training part.
-    #> Warning: Some expressions had a GC in every iteration; so filtering is disabled.
-    #> # A tibble: 2 x 13
-    #>   expression   min median `itr/sec` mem_alloc gc/se~1 n_itr  n_gc total~2 result
-    #>   <bch:expr> <dbl>  <dbl>     <dbl>     <dbl>   <dbl> <int> <dbl> <bch:t> <list>
-    #> 1 BackPropNN  34.7   22.7      1         1        Inf     2    27   941ms <NULL>
-    #> 2 R nnet       1      1        7.95      6.82     NaN    13     0   769ms <NULL>
-    #> # ... with 3 more variables: memory <list>, time <list>, gc <list>, and
-    #> #   abbreviated variable names 1: `gc/sec`, 2: total_time
-    #> $mse_comparison
-    #>     MSE by R nnet MSE by BackPropNN 
-    #>         0.2350142         0.2523064
+    #> [1,] -1.066418
 
-    # Running the benchmark comparison for prediction task.
-    bench::mark("BackPropNN"=feed_forward(data, nn_model),
-                "R nnet" = as.numeric(stats::predict(nn_model_nnet,X, type="raw")),
-                        relative = TRUE, check = FALSE)
-    #> Warning: Some expressions had a GC in every iteration; so filtering is disabled.
-    #> # A tibble: 2 x 6
-    #>   expression   min median `itr/sec` mem_alloc `gc/sec`
-    #>   <bch:expr> <dbl>  <dbl>     <dbl>     <dbl>    <dbl>
-    #> 1 BackPropNN  686.   658.        1       1        2.64
-    #> 2 R nnet        1      1       593.      3.34     1
+## A note on what “fair” means here
 
-We see that a slightly better AUC score is achieved by the R nnet
-package than BackPropNN, infact a better mse is achieved by R nnet
-(achieving slightly lower value than BackPropNN).
+`nnet` optimises with BFGS: one weight update per iteration, each using
+a gradient computed over the whole data set. `BackPropNN` uses
+stochastic gradient descent: one weight update per observation. Ten
+passes over 10,000 rows is therefore 1e+05 updates for `BackPropNN` and
+10 updates for `nnet`. The two are not interchangeable, so the
+comparisons below are reported in two separate ways:
 
-Also, BackPropNN (writing in R) consistently perform worse than R nnet
-package in terms of computational speed for both training and prediction
-tasks.
+- **Speed** is compared at an equal number of passes over the data,
+  since a pass costs the same arithmetic in every engine. This isolates
+  implementation efficiency, which is what the Rcpp rewrite was meant to
+  address.
+- **Accuracy** is compared with each engine run to convergence under its
+  own optimiser.
 
-# Now, let’s check if the Rcpp version of BackPropNN package helps to improve the computational speed.
+All results below were produced by
+[`inst/benchmarks/fair_benchmark.R`](inst/benchmarks/fair_benchmark.R)
+in a single run on 20 July 2026 (Windows, R version 4.4.2 (2024-10-31
+ucrt), nnet 7.3.19). They are read from a saved file rather than re-run
+at knit time, so the published figures stay fixed between builds. Re-run
+that script to refresh them.
+
+# Speed: training, at an equal number of passes
 
 ``` r
-# Running NN models using both versions.
-nn_model_original <- back_propagation_training(i, h, o, learning_rate,
-                                          activation_func, data)
-nn_model_rcpp <- back_propagation_training_rcpp(i, h, o, learning_rate,
-                                          activation_func, as.matrix(data))
-nn_model_nnet <- nnet::nnet(X,Y,size=h, trace=FALSE)
-
-
-# Running the benchmark comparison for training task.
-bench::mark("Original"=back_propagation_training(i, h, o, learning_rate,
-                                          activation_func, data),
-            "R nnet"=nnet::nnet(X,Y,size=h, trace=FALSE),
-            "Rcpp"=back_propagation_training_rcpp(i, h, o, learning_rate,
-                                          activation_func, as.matrix(data)),
-                    relative = TRUE, check = FALSE)
-#> Warning: Some expressions had a GC in every iteration; so filtering is disabled.
-#> # A tibble: 3 x 6
+results$train
+#> # A data frame: 3 × 6
+#>   expression      min   median `itr/sec` mem_alloc `gc/sec`
+#>   <bch:expr> <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
+#> 1 Pure R        6.36s    6.92s     0.143  270.15KB     9.45
+#> 2 Rcpp        41.35ms  42.89ms    22.7    472.25KB     0   
+#> 3 nnet         8.56ms  41.87ms    19.4      1.43MB     0
+results$train_rel
+#> # A data frame: 3 × 6
 #>   expression    min median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>  <dbl>  <dbl>     <dbl>     <dbl>    <dbl>
-#> 1 Original   121.    117.       1         1         Inf
-#> 2 R nnet       5.80   38.8      2.61      6.82      NaN
-#> 3 Rcpp         1       1      114.        2.41      Inf
-
-# Running the benchmark comparison for prediction task.
-bench::mark("Original"=feed_forward(data, nn_model_original),
-            "R nnet" = as.numeric(stats::predict(nn_model_nnet,X, type="raw")),
-            "Rcpp"=feed_forward_rcpp(data, nn_model_rcpp),
-                    relative = TRUE, check = FALSE)
-#> Warning: Some expressions had a GC in every iteration; so filtering is disabled.
-#> # A tibble: 3 x 6
-#>   expression    min median `itr/sec` mem_alloc `gc/sec`
-#>   <bch:expr>  <dbl>  <dbl>     <dbl>     <dbl>    <dbl>
-#> 1 Original   739.   687.          1       2.77      Inf
-#> 2 R nnet       1      1         633.      9.23      Inf
-#> 3 Rcpp         2.80   2.78      230.      1         NaN
+#> 1 Pure R     743.   165.          1       1         Inf
+#> 2 Rcpp         4.83   1.02      158.      1.75      NaN
+#> 3 nnet         1      1         135.      5.44      NaN
 ```
 
-We notice that for the training part, Rcpp version achieves best
-computational speed, however for the predicting part, R nnet package
-still takes the lead (performing just slightly better than Rcpp). The
-original package written in R lags behind in both training and
-prediction tasks.
+# Speed: prediction
+
+``` r
+results$pred
+#> # A data frame: 3 × 6
+#>   expression      min   median `itr/sec` mem_alloc `gc/sec`
+#>   <bch:expr> <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
+#> 1 Pure R      709.8ms 849.82ms      1.15   262.6KB    11.8 
+#> 2 Rcpp         2.56ms   3.43ms    285.      80.6KB     0   
+#> 3 nnet        688.5µs 846.75µs    976.     837.9KB     9.76
+results$pred_rel
+#> # A data frame: 3 × 6
+#>   expression     min  median `itr/sec` mem_alloc `gc/sec`
+#>   <bch:expr>   <dbl>   <dbl>     <dbl>     <dbl>    <dbl>
+#> 1 Pure R     1031.   1004.          1       3.26      Inf
+#> 2 Rcpp          3.72    4.05      247.      1         NaN
+#> 3 nnet          1       1         846.     10.4       Inf
+```
+
+The R and C++ engines are the same algorithm, so given the same seed
+they must produce the same weights. The benchmark script asserts this,
+and it held: TRUE.
+
+# Accuracy
+
+Models are trained on 70% of the data and evaluated on the held-out 30%,
+averaged over 5 random initialisations. The C++ engine is used for the
+repeated fits because it produces weights identical to the R engine at a
+fraction of the cost.
+
+``` r
+knitr::kable(results$accuracy, digits = 4)
+```
+
+| engine                 |    auc |    mse |
+|:-----------------------|-------:|-------:|
+| BackPropNN, 10 epochs  | 0.9004 | 0.1253 |
+| BackPropNN, 100 epochs | 0.9010 | 0.1251 |
+| nnet, 10 iterations    | 0.8558 | 0.1613 |
+| nnet, 100 iterations   | 0.8865 | 0.1297 |
+
+# Cost against accuracy
+
+The practitioner’s question is what accuracy a model reaches and what it
+cost to get there. This table pairs the two, and is directly comparable
+across engines regardless of the SGD/BFGS difference. Training time is
+the median of five fits at a fixed seed.
+
+``` r
+knitr::kable(results$cost_accuracy, digits = 4, row.names = FALSE)
+```
+
+| engine               | train_sec |    auc |    mse |
+|:---------------------|----------:|-------:|-------:|
+| Pure R, 10 epochs    |      4.19 | 0.9004 | 0.1253 |
+| Rcpp, 10 epochs      |      0.03 | 0.9004 | 0.1253 |
+| Rcpp, 100 epochs     |      0.26 | 0.9010 | 0.1251 |
+| nnet, 10 iterations  |      0.06 | 0.8558 | 0.1613 |
+| nnet, 100 iterations |      0.42 | 0.8865 | 0.1297 |
+
+# What these results show
+
+**The C++ rewrite is where the speed came from, and the gap to `nnet` is
+modest.** At an equal number of passes over the data, the Rcpp engine is
+two orders of magnitude faster than the pure R engine. It remains
+somewhat slower than `nnet`, whose inner loop is compiled C that has
+been tuned for decades. The interesting quantity is not that C++ beats
+interpreted R, which is expected, but that a straightforward Armadillo
+implementation lands within a small factor of a mature reference
+implementation. Timings come from a single Windows machine and vary with
+system load, so the ordering is reliable but the exact multiples are
+approximate.
+
+**The bottleneck was the interpreted loop, not the arithmetic.** The
+pure R engine allocates an S3 list on every activation call, resolves a
+closure on every call, and coerces matrices once per row. The garbage
+collector runs hundreds of times during a single benchmark; the C++
+engine triggers it zero times and allocates less memory than `nnet`. The
+algorithm is unchanged between the two engines: same initialisation,
+same update order, same equations.
+
+**Accuracy is competitive with the reference implementation.** With
+standardised predictors, `BackPropNN` reaches a higher AUC and a lower
+MSE than `nnet` under its own default settings on this problem, at a
+comparable training cost.
+
+**Per pass over the data, SGD extracts far more than BFGS.** At ten
+passes `BackPropNN` has made 1e+05 weight updates and `nnet` has made
+10, which is why the ten-pass rows differ so much. This is a property of
+the optimisers, not of the implementations, and it is the reason speed
+and accuracy are reported under separate protocols above.
+
+# Known limitations
+
+- The output layer uses the same activation as the hidden layer, so ReLU
+  is not appropriate for binary classification with this implementation.
+- The number of output nodes is nominally an argument but the prediction
+  path assumes a single output.
+- There is no convergence check, learning-rate schedule, or
+  mini-batching; the training loop runs for exactly the number of epochs
+  requested.
+- Predictors are not standardised internally. As the comparison above
+  shows, this matters a great deal for sigmoid activations, and is left
+  to the user.

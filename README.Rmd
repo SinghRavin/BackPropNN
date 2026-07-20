@@ -11,6 +11,7 @@ knitr::opts_chunk$set(
   fig.path = "man/figures/README-",
   out.width = "100%"
 )
+results <- readRDS("inst/benchmarks/results.rds")
 ```
 
 # BackPropNN
@@ -41,12 +42,15 @@ The neural network algorithm trained by the process of backpropagation is implem
 
 Where, [] represents the matrix, x represents the Hadamard multiplication (element-wise), and . represents the usual matrix multiplication. H represents hidden matrix, O represents output matrix, W_IH represents weight matrix between input layer and hidden layer, W_HO represents weight matrix between hidden layer and output layer, B_H represents bias matrix for hidden layer, B_O represents bias matrix for output layer. The chosen activation function are Sigmoid or ReLU.
 
+Weights are initialised randomly with variance 1/fan-in, and biases at zero. Both the R and the C++ engines draw from R's RNG stream, so `set.seed()` gives identical weights in either engine. The `epochs` argument controls how many complete passes are made over the data; it defaults to 1.
+
 ## Installation
 
-You can install the development version of BackPropNN like so:
+You can install the development version of BackPropNN from GitHub like so:
 
 ``` r
-install.packages("BackPropNN")
+# install.packages("devtools")
+devtools::install_github("SinghRavin/BackPropNN")
 ```
 
 ## Example
@@ -57,12 +61,14 @@ This is a basic example which shows you how to solve a common problem:
 
 ```{r}
 library(BackPropNN) # Loading the package.
+
+set.seed(100)
 num_obs <- 10000 # Number of observations.
 
 # Setting coefficients values for the logit function.
-beta0 <- -2.5
-beta1 <- 0.02
-beta2 <- 0.01
+beta0 <- -13.6
+beta1 <- 0.10
+beta2 <- 0.05
 
 # Simulating the independent variables.
 X1 <- runif(n=num_obs, min=18, max=60)
@@ -70,24 +76,30 @@ X2 <- runif(n=num_obs, min=100, max=250)
 prob <- exp(beta0 + beta1*X1 + beta2*X2) / (1 + exp(beta0 + beta1*X1 + beta2*X2))
 
 # Generating binary outcome variable.
-Y <- rbinom(n=num_obs, size=1, prob=prob)
+Yvec <- rbinom(n=num_obs, size=1, prob=prob)
 
-data <- data.frame(X1, X2, Y)
-X <- as.matrix(data[1:ncol(data)-1])
-Y <- as.matrix(data[,ncol(data)])
+# Predictors are standardised. A sigmoid saturates when inputs are on the raw
+# scale (X2 averages 175), which stalls learning in every engine compared here.
+data <- data.frame(X1 = as.numeric(scale(X1)),
+                   X2 = as.numeric(scale(X2)),
+                   Y  = Yvec)
+X  <- as.matrix(data[, 1:2])
+Ym <- as.matrix(data[, 3])
 ```
 
 # Running the functions of BackPropNN package.
 
 ```{r}
-set.seed(100)
 i <- 2 # number of input nodes
 h <- 4 # number of hidden nodes
 o <- 1 # number of output nodes
 learning_rate <- 0.1 # The learning rate of the algorithm
 activation_func <- "sigmoid" # the activation function
-nn_model <- back_propagation_training(i, h, o, learning_rate, activation_func, data)
-nn_model_nnet <- nnet::nnet(X,Y,size=h, trace=FALSE)
+epochs <- 10 # number of complete passes over the data
+
+set.seed(1)
+nn_model <- back_propagation_training(i, h, o, learning_rate, activation_func,
+                                      data, epochs = epochs)
 ```
 
 # Summarizing the results of nn_model.
@@ -95,42 +107,111 @@ nn_model_nnet <- nnet::nnet(X,Y,size=h, trace=FALSE)
 ```{r}
 plot(nn_model)
 summary(nn_model)
-print(nn_model) # This will print the benchmark comparison for training part.
-
-# Running the benchmark comparison for prediction task.
-bench::mark("BackPropNN"=feed_forward(data, nn_model),
-            "R nnet" = as.numeric(stats::predict(nn_model_nnet,X, type="raw")),
-                    relative = TRUE, check = FALSE)
 ```
 
-We see that a slightly better AUC score is achieved by the R nnet package than BackPropNN, infact a better mse is achieved by R nnet (achieving slightly lower value than BackPropNN).
+## A note on what "fair" means here
 
-Also, BackPropNN (writing in R) consistently perform worse than R nnet package in terms of computational speed for both training and prediction tasks. 
+`nnet` optimises with BFGS: one weight update per iteration, each using a
+gradient computed over the whole data set. `BackPropNN` uses stochastic
+gradient descent: one weight update per observation. Ten passes over
+`r format(results$settings$num_obs, big.mark = ",")` rows is therefore
+`r format(results$settings$num_obs * results$settings$E, big.mark = ",")`
+updates for `BackPropNN` and `r results$settings$E` updates for `nnet`. The two
+are not interchangeable, so the comparisons below are reported in two separate
+ways:
 
-# Now, let's check if the Rcpp version of BackPropNN package helps to improve the computational speed.
+- **Speed** is compared at an equal number of passes over the data, since a
+  pass costs the same arithmetic in every engine. This isolates implementation
+  efficiency, which is what the Rcpp rewrite was meant to address.
+- **Accuracy** is compared with each engine run to convergence under its own
+  optimiser.
+
+All results below were produced by
+[`inst/benchmarks/fair_benchmark.R`](inst/benchmarks/fair_benchmark.R) in a
+single run on `r format(results$meta$date, "%d %B %Y")` (`r results$meta$os`,
+`r results$meta$r`, nnet `r results$meta$versions[["nnet"]]`). They are read
+from a saved file rather than re-run at knit time, so the published figures
+stay fixed between builds. Re-run that script to refresh them.
+
+# Speed: training, at an equal number of passes
 
 ```{r}
-# Running NN models using both versions.
-nn_model_original <- back_propagation_training(i, h, o, learning_rate,
-                                          activation_func, data)
-nn_model_rcpp <- back_propagation_training_rcpp(i, h, o, learning_rate,
-                                          activation_func, as.matrix(data))
-nn_model_nnet <- nnet::nnet(X,Y,size=h, trace=FALSE)
-
-
-# Running the benchmark comparison for training task.
-bench::mark("Original"=back_propagation_training(i, h, o, learning_rate,
-                                          activation_func, data),
-            "R nnet"=nnet::nnet(X,Y,size=h, trace=FALSE),
-            "Rcpp"=back_propagation_training_rcpp(i, h, o, learning_rate,
-                                          activation_func, as.matrix(data)),
-                    relative = TRUE, check = FALSE)
-
-# Running the benchmark comparison for prediction task.
-bench::mark("Original"=feed_forward(data, nn_model_original),
-            "R nnet" = as.numeric(stats::predict(nn_model_nnet,X, type="raw")),
-            "Rcpp"=feed_forward_rcpp(data, nn_model_rcpp),
-                    relative = TRUE, check = FALSE)
+results$train
+results$train_rel
 ```
 
-We notice that for the training part, Rcpp version achieves best computational speed, however for the predicting part, R nnet package still takes the lead (performing just slightly better than Rcpp). The original package written in R lags behind in both training and prediction tasks.
+# Speed: prediction
+
+```{r}
+results$pred
+results$pred_rel
+```
+
+The R and C++ engines are the same algorithm, so given the same seed they must
+produce the same weights. The benchmark script asserts this, and it held:
+`r results$engines_agree`.
+
+# Accuracy
+
+Models are trained on 70% of the data and evaluated on the held-out 30%,
+averaged over `r results$settings$n_rep` random initialisations. The C++ engine
+is used for the repeated fits because it produces weights identical to the R
+engine at a fraction of the cost.
+
+```{r}
+knitr::kable(results$accuracy, digits = 4)
+```
+
+# Cost against accuracy
+
+The practitioner's question is what accuracy a model reaches and what it cost
+to get there. This table pairs the two, and is directly comparable across
+engines regardless of the SGD/BFGS difference. Training time is the median of
+five fits at a fixed seed.
+
+```{r}
+knitr::kable(results$cost_accuracy, digits = 4, row.names = FALSE)
+```
+
+# What these results show
+
+**The C++ rewrite is where the speed came from, and the gap to `nnet` is
+modest.** At an equal number of passes over the data, the Rcpp engine is two
+orders of magnitude faster than the pure R engine. It remains somewhat slower
+than `nnet`, whose inner loop is compiled C that has been tuned for decades.
+The interesting quantity is not that C++ beats interpreted R, which is
+expected, but that a straightforward Armadillo implementation lands within a
+small factor of a mature reference implementation. Timings come from a single
+Windows machine and vary with system load, so the ordering is reliable but the
+exact multiples are approximate.
+
+**The bottleneck was the interpreted loop, not the arithmetic.** The pure R
+engine allocates an S3 list on every activation call, resolves a closure on
+every call, and coerces matrices once per row. The garbage collector runs
+hundreds of times during a single benchmark; the C++ engine triggers it zero
+times and allocates less memory than `nnet`. The algorithm is unchanged between
+the two engines: same initialisation, same update order, same equations.
+
+**Accuracy is competitive with the reference implementation.** With
+standardised predictors, `BackPropNN` reaches a higher AUC and a lower MSE than
+`nnet` under its own default settings on this problem, at a comparable training
+cost.
+
+**Per pass over the data, SGD extracts far more than BFGS.** At ten passes
+`BackPropNN` has made
+`r format(results$settings$num_obs * results$settings$E, big.mark = ",")`
+weight updates and `nnet` has made `r results$settings$E`, which is why the
+ten-pass rows differ so much. This is a property of the optimisers, not of the
+implementations, and it is the reason speed and accuracy are reported under
+separate protocols above.
+
+# Known limitations
+
+- The output layer uses the same activation as the hidden layer, so ReLU is not
+  appropriate for binary classification with this implementation.
+- The number of output nodes is nominally an argument but the prediction path
+  assumes a single output.
+- There is no convergence check, learning-rate schedule, or mini-batching; the
+  training loop runs for exactly the number of epochs requested.
+- Predictors are not standardised internally. As the comparison above shows,
+  this matters a great deal for sigmoid activations, and is left to the user.
