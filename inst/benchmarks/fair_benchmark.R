@@ -98,20 +98,24 @@ score <- function(p) {
 
 n_rep <- 5
 out <- lapply(seq_len(n_rep), function(s) {
-  set.seed(s); f10  <- back_propagation_training_rcpp(i, h, o, learning_rate,
-                                                      activation_func,
-                                                      as.matrix(train), epochs = 10)
-  set.seed(s); f100 <- back_propagation_training_rcpp(i, h, o, learning_rate,
-                                                      activation_func,
-                                                      as.matrix(train), epochs = 100)
+  set.seed(s); f10  <- back_propagation_training_rcpp(i, h, o, learning_rate, activation_func, as.matrix(train), epochs = 10)
+  set.seed(s); f100 <- back_propagation_training_rcpp(i, h, o, learning_rate, activation_func, as.matrix(train), epochs = 100)
+  set.seed(s); f500 <- back_propagation_training_rcpp(i, h, o, learning_rate, activation_func, as.matrix(train), epochs = 500)
+  set.seed(s); f2000 <- back_propagation_training_rcpp(i, h, o, learning_rate, activation_func, as.matrix(train), epochs = 2000)
   set.seed(s); n10  <- nnet::nnet(X_tr, Y_tr, size = h, maxit = 10,  trace = FALSE)
   set.seed(s); n100 <- nnet::nnet(X_tr, Y_tr, size = h, maxit = 100, trace = FALSE)
+  set.seed(s); n500 <- nnet::nnet(X_tr, Y_tr, size = h, maxit = 500, trace = FALSE)
+  set.seed(s); n2000 <- nnet::nnet(X_tr, Y_tr, size = h, maxit = 2000, trace = FALSE)
 
   rbind(
     "BackPropNN, 10 epochs"  = score(as.numeric(feed_forward_rcpp(test, f10))),
     "BackPropNN, 100 epochs" = score(as.numeric(feed_forward_rcpp(test, f100))),
+    "BackPropNN, 500 epochs" = score(as.numeric(feed_forward_rcpp(test, f500))),
+    "BackPropNN, 2000 epochs" = score(as.numeric(feed_forward_rcpp(test, f2000))),
     "nnet, 10 iterations"    = score(as.numeric(stats::predict(n10,  X_te, type = "raw"))),
-    "nnet, 100 iterations"   = score(as.numeric(stats::predict(n100, X_te, type = "raw")))
+    "nnet, 100 iterations"   = score(as.numeric(stats::predict(n100, X_te, type = "raw"))),
+    "nnet, 500 iterations"   = score(as.numeric(stats::predict(n500, X_te, type = "raw"))),
+    "nnet, 2000 iterations"  = score(as.numeric(stats::predict(n2000, X_te, type = "raw")))
   )
 })
 
@@ -129,15 +133,23 @@ timings <- c(
   "Pure R, 10 epochs"    = time_fit(function() { set.seed(1); back_propagation_training(i, h, o, learning_rate, activation_func, train, epochs = 10) }),
   "Rcpp, 10 epochs"      = time_fit(function() { set.seed(1); back_propagation_training_rcpp(i, h, o, learning_rate, activation_func, as.matrix(train), epochs = 10) }),
   "Rcpp, 100 epochs"     = time_fit(function() { set.seed(1); back_propagation_training_rcpp(i, h, o, learning_rate, activation_func, as.matrix(train), epochs = 100) }),
+  "Rcpp, 500 epochs"     = time_fit(function() { set.seed(1); back_propagation_training_rcpp(i, h, o, learning_rate, activation_func, as.matrix(train), epochs = 500) }),
+  "Rcpp, 2000 epochs"     = time_fit(function() { set.seed(1); back_propagation_training_rcpp(i, h, o, learning_rate, activation_func, as.matrix(train), epochs = 2000) }),
   "nnet, 10 iterations"  = time_fit(function() { set.seed(1); nnet::nnet(X_tr, Y_tr, size = h, maxit = 10, trace = FALSE) }),
-  "nnet, 100 iterations" = time_fit(function() { set.seed(1); nnet::nnet(X_tr, Y_tr, size = h, maxit = 100, trace = FALSE) })
+  "nnet, 100 iterations" = time_fit(function() { set.seed(1); nnet::nnet(X_tr, Y_tr, size = h, maxit = 100, trace = FALSE) }),
+  "nnet, 500 iterations" = time_fit(function() { set.seed(1); nnet::nnet(X_tr, Y_tr, size = h, maxit = 500, trace = FALSE) }),
+  "nnet, 2000 iterations" = time_fit(function() { set.seed(1); nnet::nnet(X_tr, Y_tr, size = h, maxit = 2000, trace = FALSE) })
 )
 
 acc_lookup <- c("Pure R, 10 epochs"    = "BackPropNN, 10 epochs",
                 "Rcpp, 10 epochs"      = "BackPropNN, 10 epochs",
                 "Rcpp, 100 epochs"     = "BackPropNN, 100 epochs",
+                "Rcpp, 500 epochs"     = "BackPropNN, 500 epochs",
+                "Rcpp, 2000 epochs"     = "BackPropNN, 2000 epochs",
                 "nnet, 10 iterations"  = "nnet, 10 iterations",
-                "nnet, 100 iterations" = "nnet, 100 iterations")
+                "nnet, 100 iterations" = "nnet, 100 iterations",
+                "nnet, 500 iterations" = "nnet, 500 iterations",
+                "nnet, 2000 iterations" = "nnet, 2000 iterations")
 
 idx <- match(acc_lookup[names(timings)], accuracy$engine)
 cost_accuracy <- data.frame(

@@ -115,7 +115,7 @@ summary(nn_model)
 gradient computed over the whole data set. `BackPropNN` uses stochastic
 gradient descent: one weight update per observation. Ten passes over
 `r format(results$settings$num_obs, big.mark = ",")` rows is therefore
-`r format(results$settings$num_obs * results$settings$E, big.mark = ",")`
+`r format(results$settings$num_obs * results$settings$E, big.mark = ",", scientific = FALSE)`
 updates for `BackPropNN` and `r results$settings$E` updates for `nnet`. The two
 are not interchangeable, so the comparisons below are reported in two separate
 ways:
@@ -158,16 +158,22 @@ averaged over `r results$settings$n_rep` random initialisations. The C++ engine
 is used for the repeated fits because it produces weights identical to the R
 engine at a fraction of the cost.
 
+Both engines are run well past the point of improvement so that convergence is
+demonstrated rather than assumed. `BackPropNN` is flat from 10 epochs onward.
+`nnet` climbs until roughly 500 iterations and is then identical at 2000,
+because BFGS reaches its convergence tolerance and stops early — which is also
+why its 2000-iteration fit takes no longer than its 500-iteration fit.
+
 ```{r}
 knitr::kable(results$accuracy, digits = 4)
 ```
 
 # ROC curves on held-out data
 
-Both models are fitted on the same 70% training split and evaluated on the
-same held-out 30%, each at its converged setting: 100 epochs for `BackPropNN`,
-100 BFGS iterations for `nnet`. These curves come from a single seed, so their
-AUCs are close to but not identical to the averaged figures in the table above.
+Both models are fitted on the same 70% training split and evaluated on the same
+held-out 30%, each run to convergence: 100 epochs for `BackPropNN`, 500 BFGS
+iterations for `nnet`. These curves come from a single seed, so their AUCs are
+close to but not identical to the averaged figures in the table above.
 
 ```{r}
 set.seed(100)
@@ -182,7 +188,7 @@ set.seed(1)
 fit_bp <- back_propagation_training_rcpp(i, h, o, learning_rate, activation_func,
                                          as.matrix(train), epochs = 100)
 set.seed(1)
-fit_nnet <- nnet::nnet(X_tr, Y_tr, size = h, maxit = 100, trace = FALSE)
+fit_nnet <- nnet::nnet(X_tr, Y_tr, size = h, maxit = 500, trace = FALSE)
 
 invisible(pROC::roc(test$Y, as.numeric(feed_forward_rcpp(test, fit_bp)),
                     plot = TRUE, print.auc = TRUE, quiet = TRUE,
@@ -223,14 +229,17 @@ hundreds of times during a single benchmark; the C++ engine triggers it zero
 times and allocates less memory than `nnet`. The algorithm is unchanged between
 the two engines: same initialisation, same update order, same equations.
 
-**Accuracy is competitive with the reference implementation.** With
-standardised predictors, `BackPropNN` reaches a higher AUC and a lower MSE than
-`nnet` under its own default settings on this problem, at a comparable training
-cost.
+**Both engines converge, to different optima.** `BackPropNN` settles at an AUC
+of about 0.901 and does not move between 10 and 2000 epochs. `nnet` settles at
+about 0.893, reached by 500 iterations and unchanged at 2000. On this problem
+the from-scratch implementation converges to a better optimum, and reaches it
+in roughly a thirtieth of the time. This is a statement about these two
+optimisers on a small network with well-separated classes, not a general claim
+about SGD versus BFGS.
 
 **Per pass over the data, SGD extracts far more than BFGS.** At ten passes
 `BackPropNN` has made
-`r format(results$settings$num_obs * results$settings$E, big.mark = ",")`
+`r format(results$settings$num_obs * results$settings$E, big.mark = ",", scientific = FALSE)`
 weight updates and `nnet` has made `r results$settings$E`, which is why the
 ten-pass rows differ so much. This is a property of the optimisers, not of the
 implementations, and it is the reason speed and accuracy are reported under

@@ -160,8 +160,8 @@ summary(nn_model)
 `nnet` optimises with BFGS: one weight update per iteration, each using
 a gradient computed over the whole data set. `BackPropNN` uses
 stochastic gradient descent: one weight update per observation. Ten
-passes over 10,000 rows is therefore 1e+05 updates for `BackPropNN` and
-10 updates for `nnet`. The two are not interchangeable, so the
+passes over 10,000 rows is therefore 100,000 updates for `BackPropNN`
+and 10 updates for `nnet`. The two are not interchangeable, so the
 comparisons below are reported in two separate ways:
 
 - **Speed** is compared at an equal number of passes over the data,
@@ -185,16 +185,16 @@ results$train
 #> # A data frame: 3 × 6
 #>   expression      min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr> <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 Pure R        6.36s    6.92s     0.143  270.15KB     9.45
-#> 2 Rcpp        41.35ms  42.89ms    22.7    472.25KB     0   
-#> 3 nnet         8.56ms  41.87ms    19.4      1.43MB     0
+#> 1 Pure R        7.13s    7.97s     0.118  260.47KB     7.77
+#> 2 Rcpp         48.2ms   49.7ms    20.2    472.25KB     0   
+#> 3 nnet         9.04ms  45.42ms    18.3      1.43MB     0
 results$train_rel
 #> # A data frame: 3 × 6
 #>   expression    min median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>  <dbl>  <dbl>     <dbl>     <dbl>    <dbl>
-#> 1 Pure R     743.   165.          1       1         Inf
-#> 2 Rcpp         4.83   1.02      158.      1.75      NaN
-#> 3 nnet         1      1         135.      5.44      NaN
+#> 1 Pure R     789.   175.          1       1         Inf
+#> 2 Rcpp         5.33   1.09      172.      1.81      NaN
+#> 3 nnet         1      1         155.      5.64      NaN
 ```
 
 # Speed: prediction
@@ -204,16 +204,16 @@ results$pred
 #> # A data frame: 3 × 6
 #>   expression      min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr> <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 Pure R      709.8ms 849.82ms      1.15   262.6KB    11.8 
-#> 2 Rcpp         2.56ms   3.43ms    285.      80.6KB     0   
-#> 3 nnet        688.5µs 846.75µs    976.     837.9KB     9.76
+#> 1 Pure R     845.38ms    1.02s     0.931   262.6KB     9.49
+#> 2 Rcpp         3.41ms   3.69ms   247.       80.6KB     0   
+#> 3 nnet        896.1µs 985.45µs   890.      837.9KB     8.90
 results$pred_rel
 #> # A data frame: 3 × 6
-#>   expression     min  median `itr/sec` mem_alloc `gc/sec`
-#>   <bch:expr>   <dbl>   <dbl>     <dbl>     <dbl>    <dbl>
-#> 1 Pure R     1031.   1004.          1       3.26      Inf
-#> 2 Rcpp          3.72    4.05      247.      1         NaN
-#> 3 nnet          1       1         846.     10.4       Inf
+#>   expression    min  median `itr/sec` mem_alloc `gc/sec`
+#>   <bch:expr>  <dbl>   <dbl>     <dbl>     <dbl>    <dbl>
+#> 1 Pure R     943.   1036.          1       3.26      Inf
+#> 2 Rcpp         3.81    3.75      265.      1         NaN
+#> 3 nnet         1       1         956.     10.4       Inf
 ```
 
 The R and C++ engines are the same algorithm, so given the same seed
@@ -227,22 +227,33 @@ averaged over 5 random initialisations. The C++ engine is used for the
 repeated fits because it produces weights identical to the R engine at a
 fraction of the cost.
 
+Both engines are run well past the point of improvement so that
+convergence is demonstrated rather than assumed. `BackPropNN` is flat
+from 10 epochs onward. `nnet` climbs until roughly 500 iterations and is
+then identical at 2000, because BFGS reaches its convergence tolerance
+and stops early — which is also why its 2000-iteration fit takes no
+longer than its 500-iteration fit.
+
 ``` r
 knitr::kable(results$accuracy, digits = 4)
 ```
 
-| engine                 |    auc |    mse |
-|:-----------------------|-------:|-------:|
-| BackPropNN, 10 epochs  | 0.9004 | 0.1253 |
-| BackPropNN, 100 epochs | 0.9010 | 0.1251 |
-| nnet, 10 iterations    | 0.8558 | 0.1613 |
-| nnet, 100 iterations   | 0.8865 | 0.1297 |
+| engine                  |    auc |    mse |
+|:------------------------|-------:|-------:|
+| BackPropNN, 10 epochs   | 0.9004 | 0.1253 |
+| BackPropNN, 100 epochs  | 0.9010 | 0.1251 |
+| BackPropNN, 500 epochs  | 0.9008 | 0.1250 |
+| BackPropNN, 2000 epochs | 0.9006 | 0.1252 |
+| nnet, 10 iterations     | 0.8558 | 0.1613 |
+| nnet, 100 iterations    | 0.8865 | 0.1297 |
+| nnet, 500 iterations    | 0.8933 | 0.1268 |
+| nnet, 2000 iterations   | 0.8933 | 0.1268 |
 
 # ROC curves on held-out data
 
 Both models are fitted on the same 70% training split and evaluated on
-the same held-out 30%, each at its converged setting: 100 epochs for
-`BackPropNN`, 100 BFGS iterations for `nnet`. These curves come from a
+the same held-out 30%, each run to convergence: 100 epochs for
+`BackPropNN`, 500 BFGS iterations for `nnet`. These curves come from a
 single seed, so their AUCs are close to but not identical to the
 averaged figures in the table above.
 
@@ -259,7 +270,7 @@ set.seed(1)
 fit_bp <- back_propagation_training_rcpp(i, h, o, learning_rate, activation_func,
                                          as.matrix(train), epochs = 100)
 set.seed(1)
-fit_nnet <- nnet::nnet(X_tr, Y_tr, size = h, maxit = 100, trace = FALSE)
+fit_nnet <- nnet::nnet(X_tr, Y_tr, size = h, maxit = 500, trace = FALSE)
 
 invisible(pROC::roc(test$Y, as.numeric(feed_forward_rcpp(test, fit_bp)),
                     plot = TRUE, print.auc = TRUE, quiet = TRUE,
@@ -288,13 +299,17 @@ the median of five fits at a fixed seed.
 knitr::kable(results$cost_accuracy, digits = 4, row.names = FALSE)
 ```
 
-| engine               | train_sec |    auc |    mse |
-|:---------------------|----------:|-------:|-------:|
-| Pure R, 10 epochs    |      4.19 | 0.9004 | 0.1253 |
-| Rcpp, 10 epochs      |      0.03 | 0.9004 | 0.1253 |
-| Rcpp, 100 epochs     |      0.26 | 0.9010 | 0.1251 |
-| nnet, 10 iterations  |      0.06 | 0.8558 | 0.1613 |
-| nnet, 100 iterations |      0.42 | 0.8865 | 0.1297 |
+| engine                | train_sec |    auc |    mse |
+|:----------------------|----------:|-------:|-------:|
+| Pure R, 10 epochs     |     10.29 | 0.9004 | 0.1253 |
+| Rcpp, 10 epochs       |      0.06 | 0.9004 | 0.1253 |
+| Rcpp, 100 epochs      |      0.89 | 0.9010 | 0.1251 |
+| Rcpp, 500 epochs      |      2.69 | 0.9008 | 0.1250 |
+| Rcpp, 2000 epochs     |     10.68 | 0.9006 | 0.1252 |
+| nnet, 10 iterations   |      0.14 | 0.8558 | 0.1613 |
+| nnet, 100 iterations  |      0.97 | 0.8865 | 0.1297 |
+| nnet, 500 iterations  |      1.91 | 0.8933 | 0.1268 |
+| nnet, 2000 iterations |      1.72 | 0.8933 | 0.1268 |
 
 # What these results show
 
@@ -317,13 +332,16 @@ engine triggers it zero times and allocates less memory than `nnet`. The
 algorithm is unchanged between the two engines: same initialisation,
 same update order, same equations.
 
-**Accuracy is competitive with the reference implementation.** With
-standardised predictors, `BackPropNN` reaches a higher AUC and a lower
-MSE than `nnet` under its own default settings on this problem, at a
-comparable training cost.
+**Both engines converge, to different optima.** `BackPropNN` settles at
+an AUC of about 0.901 and does not move between 10 and 2000 epochs.
+`nnet` settles at about 0.893, reached by 500 iterations and unchanged
+at 2000. On this problem the from-scratch implementation converges to a
+better optimum, and reaches it in roughly a thirtieth of the time. This
+is a statement about these two optimisers on a small network with
+well-separated classes, not a general claim about SGD versus BFGS.
 
 **Per pass over the data, SGD extracts far more than BFGS.** At ten
-passes `BackPropNN` has made 1e+05 weight updates and `nnet` has made
+passes `BackPropNN` has made 100,000 weight updates and `nnet` has made
 10, which is why the ten-pass rows differ so much. This is a property of
 the optimisers, not of the implementations, and it is the reason speed
 and accuracy are reported under separate protocols above.
