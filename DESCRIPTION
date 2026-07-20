@@ -16,7 +16,7 @@ Description: This R-package will contain functions that will implement NN
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.2.3
+RoxygenNote: 7.3.3
 Imports: 
     stats,
     Rmpfr,

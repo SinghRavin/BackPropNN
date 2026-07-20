@@ -4,7 +4,15 @@
 \alias{back_propagation_training_rcpp}
 \title{The title of -back_propagation_training_rcpp-}
 \usage{
-back_propagation_training_rcpp(i, h, o, learning_rate, activation_func, data)
+back_propagation_training_rcpp(
+  i,
+  h,
+  o,
+  learning_rate,
+  activation_func,
+  data,
+  epochs = 1L
+)
 }
 \arguments{
 \item{i}{Numeric scalar. Number of input nodes.}
@@ -18,6 +26,8 @@ back_propagation_training_rcpp(i, h, o, learning_rate, activation_func, data)
 \item{activation_func}{Character (either "sigmoid" or "ReLU").}
 
 \item{data}{R data frame with X columns and Y labels.}
+
+\item{epochs}{Numeric scalar. Number of complete passes over the data.}
 }
 \value{
 A list of weight and bias matrices.

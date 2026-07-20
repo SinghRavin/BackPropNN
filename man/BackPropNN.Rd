@@ -2,6 +2,7 @@
 % Please edit documentation in R/BackPropNN.R
 \docType{package}
 \name{BackPropNN}
+\alias{BackPropNN-package}
 \alias{BackPropNN}
 \title{BackPropNN}
 \description{

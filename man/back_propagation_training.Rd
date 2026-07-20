@@ -7,7 +7,16 @@
 \alias{print.BackPropNN_back_propagation_training}
 \title{The title of -back_propagation_training-}
 \usage{
-back_propagation_training(i, h, o, learning_rate, activation_func, data, ...)
+back_propagation_training(
+  i,
+  h,
+  o,
+  learning_rate,
+  activation_func,
+  data,
+  epochs = 1,
+  ...
+)
 
 \method{plot}{BackPropNN_back_propagation_training}(x, ...)
 
@@ -27,6 +36,8 @@ back_propagation_training(i, h, o, learning_rate, activation_func, data, ...)
 \item{activation_func}{Character (either "sigmoid" or "ReLU").}
 
 \item{data}{R data frame with X columns and Y labels.}
+
+\item{epochs}{Numeric scalar. Number of complete passes over the data.}
 
 \item{...}{Further arguments passed.}
 

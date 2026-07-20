@@ -8,6 +8,7 @@
 #' @param learning_rate Numeric scalar. Learning rate of the algorithm.
 #' @param activation_func Character (either "sigmoid" or "ReLU").
 #' @param data R data frame with X columns and Y labels.
+#' @param epochs Numeric scalar. Number of complete passes over the data.
 #' @param ... Further arguments passed.
 #'
 #' @details Computes the weight and bias matrices for the nodes of the neural network with \code{i} # of input nodes, \code{h} # of hidden nodes, and \code{o} # of output nodes.
@@ -20,7 +21,7 @@
 #'
 #' @export
 back_propagation_training <- function(i, h, o, learning_rate,
-                                      activation_func, data, ...){
+                                      activation_func, data, epochs = 1, ...){
 
   W_IH = matrix(0.01,nrow=h,ncol=i)
   W_HO = matrix(0.01,nrow=o,ncol=h)
@@ -40,6 +41,7 @@ back_propagation_training <- function(i, h, o, learning_rate,
     stop("The activation function specified is not excepted. Choose either sigmoid or ReLU.")
   }
 
+  for (e in seq_len(epochs)){
   for (j in 1:nrow(X)){
     input_matrix_transpose = t(X[j,])
     hidden_matrix = activ_func((W_IH %*% as.matrix(X[j,])) + B_H)$value
@@ -62,7 +64,7 @@ back_propagation_training <- function(i, h, o, learning_rate,
     W_IH = W_IH + Weight_IH_deltas
     B_H = B_H + gradient_IH
   }
-
+}
   structure(list(input_data=data, num_nodes=stats::setNames(c(i,h,o), c("# of input nodes",
                                                                           "# of hidden nodes",
                                                                           "# of output nodes")),

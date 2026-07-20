@@ -23,8 +23,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // back_propagation_training_rcpp
-List back_propagation_training_rcpp(int i, int h, int o, double learning_rate, std::string activation_func, arma::mat data);
-RcppExport SEXP _BackPropNN_back_propagation_training_rcpp(SEXP iSEXP, SEXP hSEXP, SEXP oSEXP, SEXP learning_rateSEXP, SEXP activation_funcSEXP, SEXP dataSEXP) {
+List back_propagation_training_rcpp(int i, int h, int o, double learning_rate, std::string activation_func, arma::mat data, int epochs);
+RcppExport SEXP _BackPropNN_back_propagation_training_rcpp(SEXP iSEXP, SEXP hSEXP, SEXP oSEXP, SEXP learning_rateSEXP, SEXP activation_funcSEXP, SEXP dataSEXP, SEXP epochsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -34,7 +34,8 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< double >::type learning_rate(learning_rateSEXP);
     Rcpp::traits::input_parameter< std::string >::type activation_func(activation_funcSEXP);
     Rcpp::traits::input_parameter< arma::mat >::type data(dataSEXP);
-    rcpp_result_gen = Rcpp::wrap(back_propagation_training_rcpp(i, h, o, learning_rate, activation_func, data));
+    Rcpp::traits::input_parameter< int >::type epochs(epochsSEXP);
+    rcpp_result_gen = Rcpp::wrap(back_propagation_training_rcpp(i, h, o, learning_rate, activation_func, data, epochs));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -86,7 +87,7 @@ END_RCPP
 
 static const R_CallMethodDef CallEntries[] = {
     {"_BackPropNN_ReLU_rcpp", (DL_FUNC) &_BackPropNN_ReLU_rcpp, 1},
-    {"_BackPropNN_back_propagation_training_rcpp", (DL_FUNC) &_BackPropNN_back_propagation_training_rcpp, 6},
+    {"_BackPropNN_back_propagation_training_rcpp", (DL_FUNC) &_BackPropNN_back_propagation_training_rcpp, 7},
     {"_BackPropNN_derivative_ReLU_rcpp", (DL_FUNC) &_BackPropNN_derivative_ReLU_rcpp, 1},
     {"_BackPropNN_derivative_sigmoid_rcpp", (DL_FUNC) &_BackPropNN_derivative_sigmoid_rcpp, 1},
     {"_BackPropNN_feed_forward_rcpp", (DL_FUNC) &_BackPropNN_feed_forward_rcpp, 2},

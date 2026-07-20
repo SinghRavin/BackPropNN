@@ -28,6 +28,7 @@ ReLU_rcpp <- function(a) {
 #' @param learning_rate Numeric scalar. Learning rate of the algorithm.
 #' @param activation_func Character (either "sigmoid" or "ReLU").
 #' @param data R data frame with X columns and Y labels.
+#' @param epochs Numeric scalar. Number of complete passes over the data.
 #'
 #' @details Computes the weight and bias matrices for the nodes of the neural network with \code{i} # of input nodes, \code{h} # of hidden nodes, and \code{o} # of output nodes.
 #' @return A list of weight and bias matrices.
@@ -39,8 +40,8 @@ ReLU_rcpp <- function(a) {
 #' activation_func="sigmoid", data=data_as_matrix)
 #'
 #' @export
-back_propagation_training_rcpp <- function(i, h, o, learning_rate, activation_func, data) {
-    .Call(`_BackPropNN_back_propagation_training_rcpp`, i, h, o, learning_rate, activation_func, data)
+back_propagation_training_rcpp <- function(i, h, o, learning_rate, activation_func, data, epochs = 1L) {
+    .Call(`_BackPropNN_back_propagation_training_rcpp`, i, h, o, learning_rate, activation_func, data, epochs)
 }
 
 #' The title of -derivative_ReLU_rcpp-
