@@ -79,20 +79,19 @@ back_propagation_training <- function(i, h, o, learning_rate,
 #' @rdname back_propagation_training
 #' @export
 #' @param x An object of class \code{BackPropNN_back_propagation_training}.
+#' @param newdata Optional data frame on which to evaluate the model, with the
+#'   outcome in the last column. Defaults to the training data, in which case
+#'   the ROC curve is in-sample.
 #' @param ... Further arguments passed.
-plot.BackPropNN_back_propagation_training <- function(x, ...) {
-
-  data <- x$input_data
-  X = as.matrix(data[1:ncol(data)-1])
-  Y = as.matrix(data[,ncol(data)])
-
-  nn_R <- nnet::nnet(X,Y,size=x$num_nodes[2], trace=FALSE)
-  nn_R_pred <- as.numeric(stats::predict(nn_R,X, type="raw"))
-
-  pROC::roc(data[,ncol(data)],feed_forward(data,x)$pred,
-            plot=TRUE, print.auc=TRUE, main="ROC curve by BackPropNN")
-  pROC::roc(data[,ncol(data)],nn_R_pred,
-            plot=TRUE, print.auc=TRUE, main="ROC curve by R nnet")
+plot.BackPropNN_back_propagation_training <- function(x, newdata = NULL, ...) {
+  in_sample <- is.null(newdata)
+  data <- if (in_sample) x$input_data else newdata
+  y <- data[, ncol(data)]
+  r <- pROC::roc(y, feed_forward(data, x)$pred, plot = TRUE, print.auc = TRUE,
+                 quiet = TRUE,
+                 main = if (in_sample) "ROC curve by BackPropNN (in-sample)"
+                 else "ROC curve by BackPropNN (held-out)")
+  invisible(r)
 }
 
 #' @rdname back_propagation_training
@@ -112,27 +111,18 @@ summary.BackPropNN_back_propagation_training <- function(object, ...) {
 #' @param x An object of class \code{BackPropNN_back_propagation_training}.
 #' @param ... Further arguments passed.
 print.BackPropNN_back_propagation_training <- function(x, ...) {
-
-  data <- x$input_data
-  X = as.matrix(data[1:ncol(data)-1])
-  Y = as.matrix(data[,ncol(data)])
-
-  nn_R <- nnet::nnet(X,Y,size=x$num_nodes[2], trace=FALSE)
-  nn_R_pred <- as.numeric(stats::predict(nn_R,X, type="raw"))
-  nn_R_mse <- mean((Y - nn_R_pred)^2)
-
-  my_nn_mse <- mean((Y - feed_forward(x$input_data,x)$pred)^2)
-
-  print(bench::mark("BackPropNN"=back_propagation_training(x$num_nodes[1],x$num_nodes[2],
-                                          x$num_nodes[3], x$learning_rate,
-                                          x$activation_function, data),
-                    "R nnet"=nnet::nnet(X,Y,size=x$num_nodes[2], trace=FALSE),
-                    relative = TRUE, check = FALSE))
-
-  list(mse_comparison =stats::setNames(c(nn_R_mse,my_nn_mse),
-                                       c("MSE by R nnet", "MSE by BackPropNN")))
+  y <- x$input_data[, ncol(x$input_data)]
+  cat("A 3-layer neural network trained by backpropagation\n\n")
+  cat("  Input nodes   :", x$num_nodes[1], "\n")
+  cat("  Hidden nodes  :", x$num_nodes[2], "\n")
+  cat("  Output nodes  :", x$num_nodes[3], "\n")
+  cat("  Activation    :", x$activation_function, "\n")
+  cat("  Learning rate :", x$learning_rate, "\n")
+  cat("  Training rows :", nrow(x$input_data), "\n")
+  cat("  In-sample MSE :",
+      round(mean((y - feed_forward(x$input_data, x)$pred)^2), 4), "\n")
+  invisible(x)
 }
-
 
 
 

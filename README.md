@@ -110,57 +110,50 @@ nn_model <- back_propagation_training(i, h, o, learning_rate, activation_func,
 # Summarizing the results of nn_model.
 
 ``` r
-plot(nn_model)
-#> Setting levels: control = 0, case = 1
-#> Setting direction: controls < cases
+nn_model
+#> A 3-layer neural network trained by backpropagation
+#> 
+#>   Input nodes   : 2 
+#>   Hidden nodes  : 4 
+#>   Output nodes  : 1 
+#>   Activation    : sigmoid 
+#>   Learning rate : 0.1 
+#>   Training rows : 10000 
+#>   In-sample MSE : 0.1204
+summary(nn_model)
+#> $num_nodes
+#>  # of input nodes # of hidden nodes # of output nodes 
+#>                 2                 4                 1 
+#> 
+#> $activation_function
+#> [1] "sigmoid"
+#> 
+#> $learning_rate
+#> [1] 0.1
+#> 
+#> $weight_bias_matrices
+#> $weight_bias_matrices$weight_input_hidden
+#>             X1        X2
+#> [1,]  1.119254  2.149039
+#> [2,] -2.313731 -3.688991
+#> [3,]  1.239835  2.840185
+#> [4,]  2.170264  2.719256
+#> 
+#> $weight_bias_matrices$weight_hidden_output
+#>           [,1]      [,2]     [,3]     [,4]
+#> [1,] 0.9573678 -2.354976 1.608131 1.676876
+#> 
+#> $weight_bias_matrices$bias_hidden
+#>           [,1]
+#> [1,] -1.440733
+#> [2,] -2.186461
+#> [3,] -3.058938
+#> [4,] -2.271660
+#> 
+#> $weight_bias_matrices$bias_output
+#>           [,1]
+#> [1,] -1.066418
 ```
-
-<img src="man/figures/README-unnamed-chunk-4-1.png" width="100%" />
-
-    #> Setting levels: control = 0, case = 1
-    #> Setting direction: controls < cases
-
-<img src="man/figures/README-unnamed-chunk-4-2.png" width="100%" />
-
-    #> 
-    #> Call:
-    #> roc.default(response = data[, ncol(data)], predictor = nn_R_pred,     plot = TRUE, print.auc = TRUE, main = "ROC curve by R nnet")
-    #> 
-    #> Data: nn_R_pred in 6111 controls (data[, ncol(data)] 0) < 3889 cases (data[, ncol(data)] 1).
-    #> Area under the curve: 0.8255
-    summary(nn_model)
-    #> $num_nodes
-    #>  # of input nodes # of hidden nodes # of output nodes 
-    #>                 2                 4                 1 
-    #> 
-    #> $activation_function
-    #> [1] "sigmoid"
-    #> 
-    #> $learning_rate
-    #> [1] 0.1
-    #> 
-    #> $weight_bias_matrices
-    #> $weight_bias_matrices$weight_input_hidden
-    #>             X1        X2
-    #> [1,]  1.119254  2.149039
-    #> [2,] -2.313731 -3.688991
-    #> [3,]  1.239835  2.840185
-    #> [4,]  2.170264  2.719256
-    #> 
-    #> $weight_bias_matrices$weight_hidden_output
-    #>           [,1]      [,2]     [,3]     [,4]
-    #> [1,] 0.9573678 -2.354976 1.608131 1.676876
-    #> 
-    #> $weight_bias_matrices$bias_hidden
-    #>           [,1]
-    #> [1,] -1.440733
-    #> [2,] -2.186461
-    #> [3,] -3.058938
-    #> [4,] -2.271660
-    #> 
-    #> $weight_bias_matrices$bias_output
-    #>           [,1]
-    #> [1,] -1.066418
 
 ## A note on what “fair” means here
 
@@ -178,7 +171,7 @@ comparisons below are reported in two separate ways:
 - **Accuracy** is compared with each engine run to convergence under its
   own optimiser.
 
-All results below were produced by
+The timing and accuracy tables below were produced by
 [`inst/benchmarks/fair_benchmark.R`](inst/benchmarks/fair_benchmark.R)
 in a single run on 20 July 2026 (Windows, R version 4.4.2 (2024-10-31
 ucrt), nnet 7.3.19). They are read from a saved file rather than re-run
@@ -245,6 +238,45 @@ knitr::kable(results$accuracy, digits = 4)
 | nnet, 10 iterations    | 0.8558 | 0.1613 |
 | nnet, 100 iterations   | 0.8865 | 0.1297 |
 
+# ROC curves on held-out data
+
+Both models are fitted on the same 70% training split and evaluated on
+the same held-out 30%, each at its converged setting: 100 epochs for
+`BackPropNN`, 100 BFGS iterations for `nnet`. These curves come from a
+single seed, so their AUCs are close to but not identical to the
+averaged figures in the table above.
+
+``` r
+set.seed(100)
+train_idx <- sample(seq_len(num_obs), size = round(0.7 * num_obs))
+train <- data[train_idx, ]
+test  <- data[-train_idx, ]
+
+X_tr <- as.matrix(train[, 1:2]); Y_tr <- as.matrix(train[, 3])
+X_te <- as.matrix(test[, 1:2])
+
+set.seed(1)
+fit_bp <- back_propagation_training_rcpp(i, h, o, learning_rate, activation_func,
+                                         as.matrix(train), epochs = 100)
+set.seed(1)
+fit_nnet <- nnet::nnet(X_tr, Y_tr, size = h, maxit = 100, trace = FALSE)
+
+invisible(pROC::roc(test$Y, as.numeric(feed_forward_rcpp(test, fit_bp)),
+                    plot = TRUE, print.auc = TRUE, quiet = TRUE,
+                    main = "ROC curve by BackPropNN (held-out)"))
+```
+
+<img src="man/figures/README-unnamed-chunk-8-1.png" width="100%" />
+
+``` r
+
+invisible(pROC::roc(test$Y, as.numeric(stats::predict(fit_nnet, X_te, type = "raw")),
+                    plot = TRUE, print.auc = TRUE, quiet = TRUE,
+                    main = "ROC curve by R nnet (held-out)"))
+```
+
+<img src="man/figures/README-unnamed-chunk-8-2.png" width="100%" />
+
 # Cost against accuracy
 
 The practitioner’s question is what accuracy a model reaches and what it
@@ -308,3 +340,6 @@ and accuracy are reported under separate protocols above.
 - Predictors are not standardised internally. As the comparison above
   shows, this matters a great deal for sigmoid activations, and is left
   to the user.
+- `feed_forward_rcpp()` copies its input data frame into a matrix on
+  every call, which is a plausible reason prediction lags `nnet`. This
+  has not been profiled.

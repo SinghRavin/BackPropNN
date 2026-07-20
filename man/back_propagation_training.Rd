@@ -18,7 +18,7 @@ back_propagation_training(
   ...
 )
 
-\method{plot}{BackPropNN_back_propagation_training}(x, ...)
+\method{plot}{BackPropNN_back_propagation_training}(x, newdata = NULL, ...)
 
 \method{summary}{BackPropNN_back_propagation_training}(object, ...)
 
@@ -42,6 +42,10 @@ back_propagation_training(
 \item{...}{Further arguments passed.}
 
 \item{x}{An object of class \code{BackPropNN_back_propagation_training}.}
+
+\item{newdata}{Optional data frame on which to evaluate the model, with the
+outcome in the last column. Defaults to the training data, in which case
+the ROC curve is in-sample.}
 
 \item{object}{An object of class \code{BackPropNN_back_propagation_training}.}
 }

@@ -105,7 +105,7 @@ nn_model <- back_propagation_training(i, h, o, learning_rate, activation_func,
 # Summarizing the results of nn_model.
 
 ```{r}
-plot(nn_model)
+nn_model
 summary(nn_model)
 ```
 
@@ -126,7 +126,7 @@ ways:
 - **Accuracy** is compared with each engine run to convergence under its own
   optimiser.
 
-All results below were produced by
+The timing and accuracy tables below were produced by
 [`inst/benchmarks/fair_benchmark.R`](inst/benchmarks/fair_benchmark.R) in a
 single run on `r format(results$meta$date, "%d %B %Y")` (`r results$meta$os`,
 `r results$meta$r`, nnet `r results$meta$versions[["nnet"]]`). They are read
@@ -160,6 +160,37 @@ engine at a fraction of the cost.
 
 ```{r}
 knitr::kable(results$accuracy, digits = 4)
+```
+
+# ROC curves on held-out data
+
+Both models are fitted on the same 70% training split and evaluated on the
+same held-out 30%, each at its converged setting: 100 epochs for `BackPropNN`,
+100 BFGS iterations for `nnet`. These curves come from a single seed, so their
+AUCs are close to but not identical to the averaged figures in the table above.
+
+```{r}
+set.seed(100)
+train_idx <- sample(seq_len(num_obs), size = round(0.7 * num_obs))
+train <- data[train_idx, ]
+test  <- data[-train_idx, ]
+
+X_tr <- as.matrix(train[, 1:2]); Y_tr <- as.matrix(train[, 3])
+X_te <- as.matrix(test[, 1:2])
+
+set.seed(1)
+fit_bp <- back_propagation_training_rcpp(i, h, o, learning_rate, activation_func,
+                                         as.matrix(train), epochs = 100)
+set.seed(1)
+fit_nnet <- nnet::nnet(X_tr, Y_tr, size = h, maxit = 100, trace = FALSE)
+
+invisible(pROC::roc(test$Y, as.numeric(feed_forward_rcpp(test, fit_bp)),
+                    plot = TRUE, print.auc = TRUE, quiet = TRUE,
+                    main = "ROC curve by BackPropNN (held-out)"))
+
+invisible(pROC::roc(test$Y, as.numeric(stats::predict(fit_nnet, X_te, type = "raw")),
+                    plot = TRUE, print.auc = TRUE, quiet = TRUE,
+                    main = "ROC curve by R nnet (held-out)"))
 ```
 
 # Cost against accuracy
@@ -215,3 +246,6 @@ separate protocols above.
   training loop runs for exactly the number of epochs requested.
 - Predictors are not standardised internally. As the comparison above shows,
   this matters a great deal for sigmoid activations, and is left to the user.
+- `feed_forward_rcpp()` copies its input data frame into a matrix on every
+  call, which is a plausible reason prediction lags `nnet`. This has not been
+  profiled.

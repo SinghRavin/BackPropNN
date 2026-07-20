@@ -2,6 +2,13 @@
 
 ## Breaking changes
 
+* `plot()` no longer fits `nnet` internally. It now draws a single ROC curve for
+  the fitted model, and gains a `newdata` argument for evaluating on held-out
+  data. The two-model ROC comparison has moved to the README, where the `nnet`
+  call is visible and seeded.
+* `print()` no longer refits the model or runs a benchmark. It now reports the
+  network specification and in-sample MSE, and returns the object invisibly.
+
 * Weights are now initialised randomly with variance 1/fan-in rather than set
   to the constant 0.01. Under the old scheme every hidden unit computed the
   same value and received the same gradient, so a network with `h` hidden nodes
