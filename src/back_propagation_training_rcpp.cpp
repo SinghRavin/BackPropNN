@@ -30,14 +30,18 @@ List back_propagation_training_rcpp(int i, int h, int o, double learning_rate,
                                     std::string activation_func, arma::mat data,
                                     int epochs = 1){
 
-  arma::mat W_IH(h, i, arma::fill::ones);
-  W_IH *= 0.01; // Initializing the weights to be 0.01
-  arma::mat W_HO(o, h, arma::fill::ones);
-  W_HO *= 0.01;
-  arma::mat B_H(h, 1, arma::fill::ones);
-  B_H *= 0.01;
-  arma::mat B_O(o, 1, arma::fill::ones);
-  B_O *= 0.01;
+  // Random initialization drawn from R's RNG stream, so that a given
+  // set.seed() produces identical weights in the R and C++ engines.
+  arma::mat W_IH(h, i);
+  Rcpp::NumericVector init_IH = Rcpp::rnorm(h * i, 0.0, std::sqrt(1.0 / i));
+  std::copy(init_IH.begin(), init_IH.end(), W_IH.begin());
+
+  arma::mat W_HO(o, h);
+  Rcpp::NumericVector init_HO = Rcpp::rnorm(o * h, 0.0, std::sqrt(1.0 / h));
+  std::copy(init_HO.begin(), init_HO.end(), W_HO.begin());
+
+  arma::mat B_H(h, 1, arma::fill::zeros);
+  arma::mat B_O(o, 1, arma::fill::zeros);
 
   // Extracting all but last columns into a new matrix X
   arma::mat X = data.head_cols(data.n_cols - 1);

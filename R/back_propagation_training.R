@@ -23,10 +23,10 @@
 back_propagation_training <- function(i, h, o, learning_rate,
                                       activation_func, data, epochs = 1, ...){
 
-  W_IH = matrix(0.01,nrow=h,ncol=i)
-  W_HO = matrix(0.01,nrow=o,ncol=h)
-  B_H = matrix(0.01,nrow=h,ncol=1)
-  B_O = matrix(0.01,nrow=o,ncol=1)
+  W_IH = matrix(stats::rnorm(h*i, 0, sqrt(1/i)), nrow=h, ncol=i)
+  W_HO = matrix(stats::rnorm(o*h, 0, sqrt(1/h)), nrow=o, ncol=h)
+  B_H = matrix(0, nrow=h, ncol=1)
+  B_O = matrix(0, nrow=o, ncol=1)
 
   X = as.matrix(data[1:ncol(data)-1])
   Y = as.matrix(data[,ncol(data)])
