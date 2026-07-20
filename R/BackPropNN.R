@@ -27,8 +27,6 @@ NULL
 #'  the performance of this R-package in comparison to existing R NN packages in
 #'  terms of accuracy and computational time.
 #'
-#' @docType package
-#' @name BackPropNN
-#'
 #' @author Ravinder Singh
-NULL
+#' @name BackPropNN
+"_PACKAGE"

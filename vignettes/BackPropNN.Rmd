@@ -18,6 +18,23 @@ knitr::opts_chunk$set(
 library(BackPropNN)
 ```
 
+This vignette shows how to use the package on three data sets: simulated
+logistic data, a simulated AND gate, and the iris data. Timing and accuracy
+comparisons against `nnet` are reported separately in the package README, which
+is generated from a single benchmark run in
+`inst/benchmarks/fair_benchmark.R`.
+
+Two points apply throughout.
+
+**Standardise the predictors.** The activations are sigmoid, which saturates
+once inputs are far from zero. A predictor averaging 175 will drive the hidden
+units to 0 or 1 on the first pass, at which point the derivative is
+approximately zero and learning stalls. The package does not rescale inputs for
+you.
+
+**Set the number of epochs.** `epochs` is the number of complete passes over
+the data and defaults to 1. One pass is rarely enough.
+
 # Simulated data - Logistics data.
 
 ```{r}
@@ -25,9 +42,9 @@ set.seed(100)
 num_obs <- 10000 # Number of observations
 
 # Setting coefficients values for the logit function.
-beta0 <- -2.5
-beta1 <- 0.02
-beta2 <- 0.01
+beta0 <- -13.6
+beta1 <- 0.10
+beta2 <- 0.05
 
 # Simulating the independent variables.
 X1 <- runif(n=num_obs, min=18, max=60)
@@ -35,11 +52,12 @@ X2 <- runif(n=num_obs, min=100, max=250)
 prob <- exp(beta0 + beta1*X1 + beta2*X2) / (1 + exp(beta0 + beta1*X1 + beta2*X2))
 
 # Simulating binary outcome variable.
-Y <- rbinom(n=num_obs, size=1, prob=prob)
+Yvec <- rbinom(n=num_obs, size=1, prob=prob)
 
-data <- data.frame(X1, X2, Y)
-X <- as.matrix(data[1:ncol(data)-1])
-Y <- as.matrix(data[,ncol(data)])
+# Predictors are standardised before training.
+data <- data.frame(X1 = as.numeric(scale(X1)),
+                   X2 = as.numeric(scale(X2)),
+                   Y  = Yvec)
 ```
 
 # Running the functions of BackPropNN package.
@@ -50,8 +68,10 @@ h <- 8 # number of hidden nodes
 o <- 1 # number of output nodes
 learning_rate <- 0.1 # The learning rate of the algorithm
 activation_func <- "sigmoid" # the activation function
-nn_model <- back_propagation_training(i, h, o, learning_rate, activation_func, data)
-nn_model_nnet <- nnet::nnet(X,Y,size=h, trace=FALSE)
+
+set.seed(1)
+nn_model <- back_propagation_training(i, h, o, learning_rate, activation_func,
+                                      data, epochs = 10)
 ```
 
 # Summarizing the results of nn_model.
@@ -59,15 +79,24 @@ nn_model_nnet <- nnet::nnet(X,Y,size=h, trace=FALSE)
 ```{r}
 plot(nn_model)
 summary(nn_model)
-print(nn_model) # This will print the benchmark comparison for training task.
+```
 
-# Running the benchmark comparison for prediction task.
-bench::mark("BackPropNN"=feed_forward(data, nn_model),
-            "R nnet" = as.numeric(stats::predict(nn_model_nnet,X, type="raw")),
-                    relative = TRUE, check = FALSE)
+The C++ engine is the same algorithm and returns the same weights when given
+the same seed:
+
+```{r}
+set.seed(1)
+nn_model_rcpp <- back_propagation_training_rcpp(i, h, o, learning_rate,
+                                                activation_func,
+                                                as.matrix(data), epochs = 10)
+
+all.equal(unname(nn_model$weight_bias_matrices$weight_input_hidden),
+          unname(nn_model_rcpp$weight_bias_matrices$weight_input_hidden))
 ```
 
 # Simulated data - AND data.
+
+The inputs here are already 0/1, so no rescaling is needed.
 
 ```{r}
 set.seed(100)
@@ -76,8 +105,6 @@ X1 <- sample(c(0,1),num_obs, replace = TRUE)
 X2 <- sample(c(0,1),num_obs, replace = TRUE)
 Y <- ifelse(X1==1 & X2==1, 1, 0)
 data <- data.frame(X1,X2,Y)
-X <- as.matrix(data[1:ncol(data)-1])
-Y <- as.matrix(data[,ncol(data)])
 ```
 
 # Running the functions of BackPropNN package.
@@ -88,8 +115,10 @@ h <- 4 # number of hidden nodes
 o <- 1 # number of output nodes
 learning_rate <- 0.1 # The learning rate of the algorithm
 activation_func <- "sigmoid" # the activation function
-nn_model <- back_propagation_training(i, h, o, learning_rate, activation_func, data)
-nn_model_nnet <- nnet::nnet(X,Y,size=h, trace=FALSE)
+
+set.seed(1)
+nn_model <- back_propagation_training(i, h, o, learning_rate, activation_func,
+                                      data, epochs = 5)
 ```
 
 # Summarizing the results of nn_model.
@@ -97,174 +126,61 @@ nn_model_nnet <- nnet::nnet(X,Y,size=h, trace=FALSE)
 ```{r}
 plot(nn_model)
 summary(nn_model)
-print(nn_model) # This will print the benchmark comparison for training task.
-
-# Running the benchmark comparison for prediction task.
-bench::mark("BackPropNN"=feed_forward(data, nn_model),
-            "R nnet" = as.numeric(stats::predict(nn_model_nnet,X, type="raw")),
-                    relative = TRUE, check = FALSE)
 ```
 
 # Real data - IRIS data.
 
+A two-class problem, setosa against versicolor, using all four measurements as
+predictors. The measurements are on comparable but non-trivial scales, so they
+are standardised as well.
+
 ```{r}
 data("iris") # Using iris data set.
-data <- iris
-data <- data[data$Species != "virginica", ] 
-data$Species <- ifelse(data$Species=="setosa",0,1)
-X <- as.matrix(data[1:ncol(data)-1])
-Y <- as.matrix(data[,ncol(data)])
+iris2 <- iris[iris$Species != "virginica", ]
+data <- data.frame(scale(iris2[, 1:4]),
+                   Species = ifelse(iris2$Species == "setosa", 0, 1))
 ```
 
 # Running the functions of BackPropNN package.
 
 ```{r}
-set.seed(100)
 i <- 4 # number of input nodes, i.e., number of X variables.
 h <- 8 # number of hidden nodes
 o <- 1 # number of output nodes
 learning_rate <- 0.1 # The learning rate of the algorithm
 activation_func <- "sigmoid" # the activation function
-nn_model <- back_propagation_training(i, h, o, learning_rate, activation_func, data)
-nn_model_nnet <- nnet::nnet(X,Y,size=h, trace=FALSE)
+
+set.seed(1)
+nn_model <- back_propagation_training(i, h, o, learning_rate, activation_func,
+                                      data, epochs = 50)
 ```
+
+Fewer than 100 rows here, so more passes are needed than in the simulated
+examples above.
 
 # Summarizing the results of nn_model.
 
 ```{r}
 plot(nn_model)
 summary(nn_model)
-print(nn_model) # This will print the benchmark comparison for training task.
-
-# Running the benchmark comparison for prediction task.
-bench::mark("BackPropNN"=feed_forward(data, nn_model),
-            "R nnet" = as.numeric(stats::predict(nn_model_nnet,X, type="raw")),
-                    relative = TRUE, check = FALSE)
 ```
 
-# Now, let's check if the Rcpp version of BackPropNN helps to improve the computational speed.
+# Choosing the engine
 
-```{r}
-# Setting up the simulated logistics data.
+`back_propagation_training()` and `back_propagation_training_rcpp()` implement
+the same algorithm; the second is written in RcppArmadillo and is substantially
+faster on larger data. The two differ only in how the data is passed:
 
-set.seed(100)
-num_obs <- 10000 # Number of observations
-beta0 <- -2.5; beta1 <- 0.02; beta2 <- 0.01 # Setting coefficients values for the logit function.
-X1 <- runif(n=num_obs, min=18, max=60); X2 <- runif(n=num_obs, min=100, max=250) # Simulating the independent variables.
-prob <- exp(beta0 + beta1*X1 + beta2*X2) / (1 + exp(beta0 + beta1*X1 + beta2*X2))
-Y <- rbinom(n=num_obs, size=1, prob=prob) # Simulating binary outcome variable.
-data <- data.frame(X1, X2, Y)
-X <- as.matrix(data[1:ncol(data)-1])
-Y <- as.matrix(data[,ncol(data)])
+```{r, eval = FALSE}
+# R engine: takes a data frame
+back_propagation_training(i, h, o, learning_rate, activation_func,
+                          data, epochs = 10)
 
-# Setting up NN model specifications.
-i <- 2 # number of input nodes
-h <- 8 # number of hidden nodes
-o <- 1 # number of output nodes
-learning_rate <- 0.1 # The learning rate of the algorithm
-activation_func <- "sigmoid" # the activation function
-
-# Running NN models using both versions.
-nn_model_original <- back_propagation_training(i, h, o, learning_rate,
-                                          activation_func, data)
-nn_model_rcpp <- back_propagation_training_rcpp(i, h, o, learning_rate,
-                                          activation_func, as.matrix(data))
-nn_model_nnet <- nnet::nnet(X,Y,size=h, trace=FALSE)
-
-# Running the benchmark comparison for training task.
-bench::mark("Original"=back_propagation_training(i, h, o, learning_rate,
-                                          activation_func, data),
-            "R nnet"=nnet::nnet(X,Y,size=h, trace=FALSE),
-            "Rcpp"=back_propagation_training_rcpp(i, h, o, learning_rate,
-                                          activation_func, as.matrix(data)),
-                    relative = TRUE, check = FALSE)
-
-# Running the benchmark comparison for prediction task.
-bench::mark("Original"=feed_forward(data, nn_model_original),
-            "R nnet" = as.numeric(stats::predict(nn_model_nnet,X, type="raw")),
-            "Rcpp"=feed_forward_rcpp(data, nn_model_rcpp),
-                    relative = TRUE, check = FALSE)
+# C++ engine: takes a matrix
+back_propagation_training_rcpp(i, h, o, learning_rate, activation_func,
+                               as.matrix(data), epochs = 10)
 ```
 
-```{r}
-# Setting up the simulated AND data.
-
-set.seed(100)
-num_obs <- 100000 # Number of observations
-X1 <- sample(c(0,1),num_obs, replace = TRUE)
-X2 <- sample(c(0,1),num_obs, replace = TRUE)
-Y <- ifelse(X1==1 & X2==1, 1, 0)
-data <- data.frame(X1,X2,Y)
-X <- as.matrix(data[1:ncol(data)-1])
-Y <- as.matrix(data[,ncol(data)])
-
-# Setting up NN model specifications.
-i <- 2 # number of input nodes
-h <- 4 # number of hidden nodes
-o <- 1 # number of output nodes
-learning_rate <- 0.1 # The learning rate of the algorithm
-activation_func <- "sigmoid" # the activation function
-
-# Running NN models using both versions.
-nn_model_original <- back_propagation_training(i, h, o, learning_rate,
-                                          activation_func, data)
-nn_model_rcpp <- back_propagation_training_rcpp(i, h, o, learning_rate,
-                                          activation_func, as.matrix(data))
-nn_model_nnet <- nnet::nnet(X,Y,size=h, trace=FALSE)
-
-# Running the benchmark comparison for training task.
-bench::mark("Original"=back_propagation_training(i, h, o, learning_rate,
-                                          activation_func, data),
-            "R nnet"=nnet::nnet(X,Y,size=h, trace=FALSE),
-            "Rcpp"=back_propagation_training_rcpp(i, h, o, learning_rate,
-                                          activation_func, as.matrix(data)),
-                    relative = TRUE, check = FALSE)
-
-# Running the benchmark comparison for prediction task.
-bench::mark("Original"=feed_forward(data, nn_model_original),
-            "R nnet" = as.numeric(stats::predict(nn_model_nnet,X, type="raw")),
-            "Rcpp"=feed_forward_rcpp(data, nn_model_rcpp),
-                    relative = TRUE, check = FALSE)
-```
-
-```{r}
-# Setting up the Real IRIS data.
-
-data("iris") # Using iris data set.
-data <- iris
-data <- data[data$Species != "virginica", ] 
-data$Species <- ifelse(data$Species=="setosa",0,1)
-X <- as.matrix(data[1:ncol(data)-1])
-Y <- as.matrix(data[,ncol(data)])
-
-# Setting up NN model specifications.
-i <- 4 # number of input nodes
-h <- 8 # number of hidden nodes
-o <- 1 # number of output nodes
-learning_rate <- 0.1 # The learning rate of the algorithm
-activation_func <- "sigmoid" # the activation function
-
-# Running NN models using both versions.
-nn_model_original <- back_propagation_training(i, h, o, learning_rate,
-                                          activation_func, data)
-nn_model_rcpp <- back_propagation_training_rcpp(i, h, o, learning_rate,
-                                          activation_func, as.matrix(data))
-nn_model_nnet <- nnet::nnet(X,Y,size=h, trace=FALSE)
-
-# Running the benchmark comparison for training task.
-bench::mark("Original"=back_propagation_training(i, h, o, learning_rate,
-                                          activation_func, data),
-            "R nnet"=nnet::nnet(X,Y,size=h, trace=FALSE),
-            "Rcpp"=back_propagation_training_rcpp(i, h, o, learning_rate,
-                                          activation_func, as.matrix(data)),
-                    relative = TRUE, check = FALSE)
-
-# Running the benchmark comparison for prediction task.
-bench::mark("Original"=feed_forward(data, nn_model_original),
-            "R nnet" = as.numeric(stats::predict(nn_model_nnet,X, type="raw")),
-            "Rcpp"=feed_forward_rcpp(data, nn_model_rcpp),
-                    relative = TRUE, check = FALSE)
-```
-
-
-
+Prediction follows the same pattern, with `feed_forward()` and
+`feed_forward_rcpp()`. See the README for the timing comparison between the two
+engines and against `nnet`.

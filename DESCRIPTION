@@ -1,6 +1,6 @@
 Package: BackPropNN
 Title: Feed Forward Neural Network trained via Backpropagation
-Version: 0.1-0
+Version: 0.2-0
 Authors@R: 
     person("Ravinder", "Singh", , "u1374012@utah.edu", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0002-7221-8557"))
