@@ -88,8 +88,6 @@ Yvec <- rbinom(n=num_obs, size=1, prob=prob)
 data <- data.frame(X1 = as.numeric(scale(X1)),
                    X2 = as.numeric(scale(X2)),
                    Y  = Yvec)
-X  <- as.matrix(data[, 1:2])
-Ym <- as.matrix(data[, 3])
 ```
 
 # Running the functions of BackPropNN package.
@@ -155,28 +153,26 @@ summary(nn_model)
 #> [1,] -1.066418
 ```
 
-## A note on what “fair” means here
+## How the comparison is set up
 
 `nnet` optimises with BFGS: one weight update per iteration, each using
-a gradient computed over the whole data set. `BackPropNN` uses
-stochastic gradient descent: one weight update per observation. Ten
-passes over 10,000 rows is therefore 100,000 updates for `BackPropNN`
-and 10 updates for `nnet`. The two are not interchangeable, so the
-comparisons below are reported in two separate ways:
+a gradient over the whole data set. `BackPropNN` uses stochastic
+gradient descent: one update per observation. An epoch and an iteration
+are therefore not the same unit of work, and the two are compared under
+two protocols:
 
-- **Speed** is compared at an equal number of passes over the data,
-  since a pass costs the same arithmetic in every engine. This isolates
-  implementation efficiency, which is what the Rcpp rewrite was meant to
-  address.
-- **Accuracy** is compared with each engine run to convergence under its
-  own optimiser.
+- **Speed** at an equal number of passes over the data. A pass costs the
+  same arithmetic in every engine, so this isolates implementation
+  efficiency.
+- **Accuracy** with each engine run to convergence under its own
+  optimiser.
 
-The timing and accuracy tables below were produced by
+Every number below comes from the same 70/30 split (7,000 train, 3,000
+test), the same seeds, and the same high-resolution clock. Produced by
 [`inst/benchmarks/fair_benchmark.R`](inst/benchmarks/fair_benchmark.R)
-in a single run on 20 July 2026 (Windows, R version 4.4.2 (2024-10-31
-ucrt), nnet 7.3.19). They are read from a saved file rather than re-run
-at knit time, so the published figures stay fixed between builds. Re-run
-that script to refresh them.
+in one run on 20 July 2026 (Windows, R version 4.4.2 (2024-10-31 ucrt),
+nnet 7.3.19), and read from a saved file so the published figures do not
+drift between builds.
 
 # Speed: training, at an equal number of passes
 
@@ -185,16 +181,16 @@ results$train
 #> # A data frame: 3 × 6
 #>   expression      min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr> <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 Pure R        7.13s    7.97s     0.118  260.47KB     7.77
-#> 2 Rcpp         48.2ms   49.7ms    20.2    472.25KB     0   
-#> 3 nnet         9.04ms  45.42ms    18.3      1.43MB     0
+#> 1 Pure R        5.13s     5.9s     0.154  196.47KB     6.12
+#> 2 Rcpp         40.2ms   45.8ms    20.6    331.62KB     0   
+#> 3 nnet        94.78ms  111.9ms     8.51     1.04MB     0
 results$train_rel
 #> # A data frame: 3 × 6
 #>   expression    min median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr>  <dbl>  <dbl>     <dbl>     <dbl>    <dbl>
-#> 1 Pure R     789.   175.          1       1         Inf
-#> 2 Rcpp         5.33   1.09      172.      1.81      NaN
-#> 3 nnet         1      1         155.      5.64      NaN
+#> 1 Pure R     128.   129.         1        1         Inf
+#> 2 Rcpp         1      1        134.       1.69      NaN
+#> 3 nnet         2.36   2.44      55.3      5.45      NaN
 ```
 
 # Speed: prediction
@@ -204,35 +200,29 @@ results$pred
 #> # A data frame: 3 × 6
 #>   expression      min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr> <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 Pure R     845.38ms    1.02s     0.931   262.6KB     9.49
-#> 2 Rcpp         3.41ms   3.69ms   247.       80.6KB     0   
-#> 3 nnet        896.1µs 985.45µs   890.      837.9KB     8.90
+#> 1 Pure R     257.41ms 296.65ms      3.30    98.6KB     8.67
+#> 2 Rcpp        983.2µs 998.55µs    992.      25.9KB     0   
+#> 3 nnet         1.02ms   1.06ms    897.       338KB     0
 results$pred_rel
 #> # A data frame: 3 × 6
-#>   expression    min  median `itr/sec` mem_alloc `gc/sec`
-#>   <bch:expr>  <dbl>   <dbl>     <dbl>     <dbl>    <dbl>
-#> 1 Pure R     943.   1036.          1       3.26      Inf
-#> 2 Rcpp         3.81    3.75      265.      1         NaN
-#> 3 nnet         1       1         956.     10.4       Inf
+#>   expression    min median `itr/sec` mem_alloc `gc/sec`
+#>   <bch:expr>  <dbl>  <dbl>     <dbl>     <dbl>    <dbl>
+#> 1 Pure R     262.   297.          1       3.80      Inf
+#> 2 Rcpp         1      1         301.      1         NaN
+#> 3 nnet         1.04   1.06      272.     13.0       NaN
 ```
 
 The R and C++ engines are the same algorithm, so given the same seed
-they must produce the same weights. The benchmark script asserts this,
-and it held: TRUE.
+they must produce the same weights. The benchmark script asserts this:
+TRUE.
 
 # Accuracy
 
-Models are trained on 70% of the data and evaluated on the held-out 30%,
-averaged over 5 random initialisations. The C++ engine is used for the
-repeated fits because it produces weights identical to the R engine at a
-fraction of the cost.
-
-Both engines are run well past the point of improvement so that
-convergence is demonstrated rather than assumed. `BackPropNN` is flat
-from 10 epochs onward. `nnet` climbs until roughly 500 iterations and is
-then identical at 2000, because BFGS reaches its convergence tolerance
-and stops early — which is also why its 2000-iteration fit takes no
-longer than its 500-iteration fit.
+Held-out AUC and MSE, averaged over 5 random initialisations. Both
+engines are run well past the point of improvement, so convergence is
+demonstrated rather than assumed: `BackPropNN` is flat from 10 epochs
+onward, and `nnet` is identical at 500 and 2000 iterations because BFGS
+reaches its tolerance and stops early.
 
 ``` r
 knitr::kable(results$accuracy, digits = 4)
@@ -251,11 +241,9 @@ knitr::kable(results$accuracy, digits = 4)
 
 # ROC curves on held-out data
 
-Both models are fitted on the same 70% training split and evaluated on
-the same held-out 30%, each run to convergence: 100 epochs for
-`BackPropNN`, 500 BFGS iterations for `nnet`. These curves come from a
-single seed, so their AUCs are close to but not identical to the
-averaged figures in the table above.
+Each engine at convergence: 100 epochs for `BackPropNN`, 500 BFGS
+iterations for `nnet`. Single seed, so these AUCs sit close to but not
+exactly on the averaged figures above.
 
 ``` r
 set.seed(100)
@@ -290,10 +278,9 @@ invisible(pROC::roc(test$Y, as.numeric(stats::predict(fit_nnet, X_te, type = "ra
 
 # Cost against accuracy
 
-The practitioner’s question is what accuracy a model reaches and what it
-cost to get there. This table pairs the two, and is directly comparable
-across engines regardless of the SGD/BFGS difference. Training time is
-the median of five fits at a fixed seed.
+What accuracy each engine reaches, and what it cost. Directly comparable
+regardless of the SGD/BFGS difference. Training time is the median of
+five seeded fits.
 
 ``` r
 knitr::kable(results$cost_accuracy, digits = 4, row.names = FALSE)
@@ -301,50 +288,45 @@ knitr::kable(results$cost_accuracy, digits = 4, row.names = FALSE)
 
 | engine                | train_sec |    auc |    mse |
 |:----------------------|----------:|-------:|-------:|
-| Pure R, 10 epochs     |     10.29 | 0.9004 | 0.1253 |
-| Rcpp, 10 epochs       |      0.06 | 0.9004 | 0.1253 |
-| Rcpp, 100 epochs      |      0.89 | 0.9010 | 0.1251 |
-| Rcpp, 500 epochs      |      2.69 | 0.9008 | 0.1250 |
-| Rcpp, 2000 epochs     |     10.68 | 0.9006 | 0.1252 |
-| nnet, 10 iterations   |      0.14 | 0.8558 | 0.1613 |
-| nnet, 100 iterations  |      0.97 | 0.8865 | 0.1297 |
-| nnet, 500 iterations  |      1.91 | 0.8933 | 0.1268 |
-| nnet, 2000 iterations |      1.72 | 0.8933 | 0.1268 |
+| Pure R, 10 epochs     |    7.1554 | 0.9004 | 0.1253 |
+| Rcpp, 10 epochs       |    0.0473 | 0.9004 | 0.1253 |
+| Rcpp, 100 epochs      |    0.4375 | 0.9010 | 0.1251 |
+| Rcpp, 500 epochs      |    2.3451 | 0.9008 | 0.1250 |
+| Rcpp, 2000 epochs     |    9.5348 | 0.9006 | 0.1252 |
+| nnet, 10 iterations   |    0.0771 | 0.8558 | 0.1613 |
+| nnet, 100 iterations  |    0.5607 | 0.8865 | 0.1297 |
+| nnet, 500 iterations  |    1.3427 | 0.8933 | 0.1268 |
+| nnet, 2000 iterations |    1.3400 | 0.8933 | 0.1268 |
 
 # What these results show
 
-**The C++ rewrite is where the speed came from, and the gap to `nnet` is
-modest.** At an equal number of passes over the data, the Rcpp engine is
-two orders of magnitude faster than the pure R engine. It remains
-somewhat slower than `nnet`, whose inner loop is compiled C that has
-been tuned for decades. The interesting quantity is not that C++ beats
-interpreted R, which is expected, but that a straightforward Armadillo
-implementation lands within a small factor of a mature reference
-implementation. Timings come from a single Windows machine and vary with
-system load, so the ordering is reliable but the exact multiples are
-approximate.
-
-**The bottleneck was the interpreted loop, not the arithmetic.** The
-pure R engine allocates an S3 list on every activation call, resolves a
-closure on every call, and coerces matrices once per row. The garbage
-collector runs hundreds of times during a single benchmark; the C++
-engine triggers it zero times and allocates less memory than `nnet`. The
-algorithm is unchanged between the two engines: same initialisation,
-same update order, same equations.
+**The C++ rewrite removed the interpreter, not the arithmetic.** At an
+equal number of passes the Rcpp engine is about 129 times faster than
+the pure R engine, and about 2.4 times faster than `nnet`. Prediction is
+a tie with `nnet`. The pure R engine allocates an S3 list on every
+activation call, resolves a closure on every call, and coerces matrices
+once per row; its garbage collector runs hundreds of times per
+benchmark, while the C++ engine triggers it zero times and allocates
+less memory than `nnet`. The algorithm is unchanged between the two
+engines: same initialisation, same update order, same equations.
 
 **Both engines converge, to different optima.** `BackPropNN` settles at
-an AUC of about 0.901 and does not move between 10 and 2000 epochs.
-`nnet` settles at about 0.893, reached by 500 iterations and unchanged
-at 2000. On this problem the from-scratch implementation converges to a
-better optimum, and reaches it in roughly a thirtieth of the time. This
-is a statement about these two optimisers on a small network with
-well-separated classes, not a general claim about SGD versus BFGS.
+an AUC near 0.901 and does not move between 10 and 2000 epochs. `nnet`
+settles near 0.893, reached by 500 iterations and unchanged at 2000. The
+from-scratch implementation converges to the better optimum, and reaches
+it roughly 28 times faster.
 
-**Per pass over the data, SGD extracts far more than BFGS.** At ten
-passes `BackPropNN` has made 100,000 weight updates and `nnet` has made
-10, which is why the ten-pass rows differ so much. This is a property of
-the optimisers, not of the implementations, and it is the reason speed
-and accuracy are reported under separate protocols above.
+**Most of that 28x is the optimiser, not the language.** Ten passes is
+100,000 weight updates for SGD and ten for BFGS, so `BackPropNN` needs
+50 times fewer passes to converge. Multiply that by the 2.4x per-pass
+advantage and the gap follows. This holds for a 17-parameter network on
+well-separated, linearly generated data, which is where SGD is
+strongest. On a harder surface BFGS’s curvature information is exactly
+what pays off, and the ranking could reverse.
+
+**Timings vary with system load.** They come from a single Windows
+machine, so the ordering is reliable and the exact multiples are
+approximate.
 
 # Known limitations
 
@@ -355,9 +337,5 @@ and accuracy are reported under separate protocols above.
 - There is no convergence check, learning-rate schedule, or
   mini-batching; the training loop runs for exactly the number of epochs
   requested.
-- Predictors are not standardised internally. As the comparison above
-  shows, this matters a great deal for sigmoid activations, and is left
-  to the user.
-- `feed_forward_rcpp()` copies its input data frame into a matrix on
-  every call, which is a plausible reason prediction lags `nnet`. This
-  has not been profiled.
+- Predictors are not standardised internally. As shown above, this
+  matters a great deal for sigmoid activations, and is left to the user.
